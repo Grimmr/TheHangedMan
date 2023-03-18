@@ -1,0 +1,8 @@
+C:\Users\grimm\Documents\ygoai\windbot_but_with_bad_decks\ExecutorBase\bin\Debug\ExecutorBase.dll
+C:\Users\grimm\Documents\ygoai\windbot_but_with_bad_decks\ExecutorBase\bin\Debug\ExecutorBase.pdb
+C:\Users\grimm\Documents\ygoai\windbot_but_with_bad_decks\ExecutorBase\bin\Debug\Mono.Data.Sqlite.dll
+C:\Users\grimm\Documents\ygoai\windbot_but_with_bad_decks\ExecutorBase\obj\Debug\ExecutorBase.csproj.AssemblyReference.cache
+C:\Users\grimm\Documents\ygoai\windbot_but_with_bad_decks\ExecutorBase\obj\Debug\ExecutorBase.csproj.CoreCompileInputs.cache
+C:\Users\grimm\Documents\ygoai\windbot_but_with_bad_decks\ExecutorBase\obj\Debug\ExecutorBase.csproj.CopyComplete
+C:\Users\grimm\Documents\ygoai\windbot_but_with_bad_decks\ExecutorBase\obj\Debug\ExecutorBase.dll
+C:\Users\grimm\Documents\ygoai\windbot_but_with_bad_decks\ExecutorBase\obj\Debug\ExecutorBase.pdb
