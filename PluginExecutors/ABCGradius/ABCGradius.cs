@@ -34,8 +34,10 @@ namespace WindBot.Game.AI.Decks
         {
             //Shotguns
             AddExecutor(ExecutorType.Activate, (int)CardID.PotOfExtravagance, POEeffect);
-            AddExecutor(ExecutorType.Activate, (int)CardID.UnionHangar);
             AddExecutor(ExecutorType.Activate, (int)CardID.VicViperT301);
+
+            //SetJade
+            AddExecutor(ExecutorType.MonsterSet, (int)CardID.JadeKnight, NormalSummonCheck);
 
             //Normals
             AddExecutor(ExecutorType.Summon, NormalSummonCheck);
@@ -55,16 +57,19 @@ namespace WindBot.Game.AI.Decks
 
         public bool NormalSummonCheck()
         {
-            return Card.Id == chooseFromHand(getSummonFromHandPreferenceOrder());
+            return Card.Id == (int)chooseFromHand(getSummonFromHandPreferenceOrder());
         }
 
         public bool GadgetEffect()
         {
-            AI.SelectCard(chooseFromHand(getSummonFromHandPreferenceOrder()));
+            IList<CardID> DefenceCards = new List<CardID> {CardID.JadeKnight, CardID.BBusterDrake, CardID.CCrushWyvern};
             
+            CardID target = chooseFromHand(getSummonFromHandPreferenceOrder());
+            AI.SelectCard((int)target);
+            if (DefenceCards.Contains(target)) { AI.SelectPosition(CardPosition.FaceUpDefence); }
             return true;
         }
-        
+
         /// <summary>
         /// gets the prority order for summoning monsters from hand. This is just the special summon order but gold gadget is always first
         /// </summary>
@@ -119,17 +124,17 @@ namespace WindBot.Game.AI.Decks
         /// </summary>
         /// <param name="options">orderd list of target cards</param>
         /// <returns>the selected card</returns>
-        public int chooseFromHand(CardID[] options)
+        public CardID chooseFromHand(CardID[] options)
         {
             foreach (CardID card in options)
             {
                 if(Bot.HasInHand((int)card))
                 {
-                    return (int)card;
+                    return card;
                 }
             }
             //case: no prefered targets 
-            return (int)options[0];
+            return options[0];
         }
     }
 }
