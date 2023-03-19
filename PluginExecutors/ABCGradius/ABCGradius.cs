@@ -37,10 +37,11 @@ namespace WindBot.Game.AI.Decks
         public SampleExecutor(GameAI ai, Duel duel)
             : base(ai, duel)
         {
-            //always activate missable conditionals
+            //always activate conditionals
             AddExecutor(ExecutorType.Activate, (int)CardID.JadeKnight, JadeKnightEffect);
             AddExecutor(ExecutorType.Activate, (int)CardID.DeltaTri, DeltaTriEffect);
             AddExecutor(ExecutorType.Activate, (int)CardID.VictoryViperXX03, VictoryViperEffect);
+            AddExecutor(ExecutorType.Activate, (int)CardID.LordBritishSpaceFighter, LordBritishEffect);
 
             //Shotguns
             AddExecutor(ExecutorType.Activate, (int)CardID.PotOfExtravagance, POEeffect);
@@ -190,7 +191,7 @@ namespace WindBot.Game.AI.Decks
             
             foreach(ClientCard mon in Enemy.GetMonsters())
             {
-                if((mon.Position == (int)CardPosition.FaceUpAttack && activeVictoryViper.Attack <= mon.Attack && activeVictoryViper.Attack + 400 >= mon.Attack) || (mon.Position == (int)CardPosition.FaceUpDefence && activeVictoryViper.Defense <= mon.Defense && activeVictoryViper.Defense + 400 > mon.Defense))
+                if((mon.Position == (int)CardPosition.FaceUpAttack && activeVictoryViper.Attack <= mon.Attack && activeVictoryViper.Attack + 400 >= mon.Attack) || (mon.Position == (int)CardPosition.FaceUpDefence && activeVictoryViper.Attack <= mon.Defense && activeVictoryViper.Attack + 400 > mon.Defense))
                 {
                     AI.SelectOption(0);
                     return true;
@@ -198,6 +199,30 @@ namespace WindBot.Game.AI.Decks
             }
 
             AI.SelectOption(2);
+            return true;
+        }
+
+        public bool LordBritishEffect()
+        {
+            ClientCard activeLordBritsih = AI.Duel.CurrentChain.Last();
+            foreach (ClientCard mon in Enemy.GetMonsters())
+            {
+                if ((mon.Position == (int)CardPosition.FaceUpAttack && activeLordBritsih.Attack <= mon.Attack && activeLordBritsih.Attack + 400 >= mon.Attack) || (mon.Position == (int)CardPosition.FaceUpDefence && activeLordBritsih.Attack <= mon.Defense && activeLordBritsih.Attack + 400 > mon.Defense))
+                {
+                    AI.SelectOption(0);
+                    return true;
+                }
+            }
+
+            if  (Enemy.GetMonsters().Count == 0 && activeLordBritsih.Attack >= 1200)
+            {
+                AI.SelectOption(0);
+                return true;
+            }
+
+            AI.SelectOption(2);
+            AI.SelectOption(1);
+
             return true;
         }
 
