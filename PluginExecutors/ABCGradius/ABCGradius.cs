@@ -45,6 +45,8 @@ namespace WindBot.Game.AI.Decks
             AddExecutor(ExecutorType.Activate, (int)CardID.LordBritishSpaceFighter, LordBritishEffect);
             AddExecutor(ExecutorType.Activate, (int)CardID.FalchionB, FalchionBEffect);
             AddExecutor(ExecutorType.Activate, (int)CardID.AAssaultCore, AAssaultCoreEffect);
+            AddExecutor(ExecutorType.Activate, (int)CardID.BBusterDrake, BBusterDrakeEffect);
+            AddExecutor(ExecutorType.Activate, (int)CardID.CCrushWyvern, CCrushWyvernEffect);
 
             //Shotguns
             AddExecutor(ExecutorType.Activate, (int)CardID.PotOfExtravagance, POEeffect);
@@ -269,6 +271,42 @@ namespace WindBot.Game.AI.Decks
                     AI.SelectCard((int)validTarget);
                     return true;
                 }
+            }
+
+            //unreachable return
+            return false;
+        }
+
+        public bool BBusterDrakeEffect()
+        {
+            //equip effect
+            if (ActivateDescription == Util.GetStringId((int)CardID.BBusterDrake, 0))
+            {
+                return ABCPartUnionEffect();
+            }
+            //destroy effect
+            if (ActivateDescription == Util.GetStringId((int)CardID.BBusterDrake, 1))
+            {
+                AI.SelectCard(getMainMonsterToHandPreferenceOrder().Cast<int>().ToArray());
+                return true;
+            }
+
+            //unreachable return
+            return false;
+        }
+
+        public bool CCrushWyvernEffect()
+        {
+            //equip effect
+            if (ActivateDescription == Util.GetStringId((int)CardID.CCrushWyvern, 0))
+            {
+                return ABCPartUnionEffect();
+            }
+            //destroy effect
+            if (ActivateDescription == Util.GetStringId((int)CardID.CCrushWyvern, 1))
+            {
+                AI.SelectCard(getMainMonsterToFieldPreferenceOrder().Cast<int>().ToArray());
+                return true;
             }
 
             //unreachable return
