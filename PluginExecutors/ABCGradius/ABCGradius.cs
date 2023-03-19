@@ -57,63 +57,93 @@ namespace WindBot.Game.AI.Decks
 
         public bool NormalSummonCheck()
         {
-            return Card.Id == (int)chooseFromHand(getSummonFromHandPreferenceOrder());
+            return Card.Id == (int)chooseFromHand(getMainMonsterPreferenceOrder());
         }
 
         public bool GadgetEffect()
         {
             IList<CardID> DefenceCards = new List<CardID> {CardID.JadeKnight, CardID.BBusterDrake, CardID.CCrushWyvern};
             
-            CardID target = chooseFromHand(getSummonFromHandPreferenceOrder());
+            CardID target = chooseFromHand(getMainMonsterPreferenceOrder());
             AI.SelectCard((int)target);
             if (DefenceCards.Contains(target)) { AI.SelectPosition(CardPosition.FaceUpDefence); }
             return true;
         }
 
         /// <summary>
-        /// gets the prority order for summoning monsters from hand. This is just the special summon order but gold gadget is always first
+        /// gets the prority order for summoning or searching monsters
+        /// 
+        /// 1)  gadget gold/silver
+        /// 2)  lord british
+        /// 3)  Victory Viper
+        /// 4)  ABC not on field (B > C > A)
+        /// 5)  Bluethunder
+        /// 6)  jadeknight if not on field
+        /// 7)  tri if it would get the final ABC part
+        /// 8)  falchionB
+        /// 9)  tri if it would not get the final ABC part
+        /// 10) jadeknight if already on board
+        /// 11) vic viper
+        /// 12) ABC already on field ( B > C > A)
+        /// 13) honest
         /// </summary>
+        /// 
         /// <returns>ordered list of preference</returns>
-        private CardID[] getSummonFromHandPreferenceOrder()
+        private IList<CardID> getMainMonsterPreferenceOrder()
         {
-            CardID[] preference = getSpecialSummonFromHandPreferenceOrder();
-            preference[0] = CardID.GoldGadget;
-            return preference;
-        }
+            IList<CardID> preference = new List<CardID>();
 
-        /// <summary>
-        /// gets the prority order for special summoning monsters from hand
-        /// </summary>
-        /// <returns>ordered list of preference</returns>
-        private CardID[] getSpecialSummonFromHandPreferenceOrder()
-        {
-            CardID[] preference = { CardID.GoldGadget, CardID.SilverGadget, CardID.LordBritishSpaceFighter, CardID.VictoryViperXX03, CardID.BBusterDrake, CardID.CCrushWyvern, CardID.AAssaultCore, CardID.BlueThunderT45, CardID.JadeKnight, CardID.FalchionB, CardID.DeltaTri, CardID.JadeKnight, CardID.VicViperT301, CardID.BBusterDrake, CardID.CCrushWyvern, CardID.AAssaultCore, CardID.AAssaultCore, CardID.Honest };
-            //replace gold if activating Gold
-            if (Card.Id == (int)CardID.GoldGadget) { preference[0] = CardID.SilverGadget; }
+            //there is only one of each gadget so we don't care about clashes (eg: summoning gold off of gold)
+            preference.Add(CardID.GoldGadget);
+            preference.Add(CardID.SilverGadget);
 
-            //reorder ABC based on board state
-            for (int i = 0; i < 2; i++)
+            //lord british and victory viper have no complications
+            preference.Add(CardID.LordBritishSpaceFighter);
+            preference.Add(CardID.VictoryViperXX03);
+
+            //each ABC part should only be here if it isn't already in play
+            if (!Bot.HasInMonstersZone((int)CardID.BBusterDrake) && !Bot.HasInSpellZone((int)CardID.BBusterDrake)) { preference.Add(CardID.BBusterDrake); }
+            if (!Bot.HasInMonstersZone((int)CardID.CCrushWyvern) && !Bot.HasInSpellZone((int)CardID.BBusterDrake)) { preference.Add(CardID.CCrushWyvern); }
+            if (!Bot.HasInMonstersZone((int)CardID.AAssaultCore) && !Bot.HasInSpellZone((int)CardID.BBusterDrake)) { preference.Add(CardID.AAssaultCore); }
+
+            //bluethunder is always wanted here
+            preference.Add(CardID.BlueThunderT45);
+
+            //jadeknight is wanted here if it's not on board already
+            if (!Bot.HasInMonstersZone((int)CardID.JadeKnight)) { preference.Add(CardID.JadeKnight); }
+
+            //tri is wanted if it would fetch the last ABC part (in this case the block above would only have added the one ABC part we need)
+            IList<CardID> ABC = new List<CardID> { CardID.AAssaultCore, CardID.BBusterDrake, CardID.CCrushWyvern };
+            IList<CardID> ABCWanted = new List<CardID>();
+            foreach (CardID wanted in preference)
             {
-                //if current priority is already in play
-                if (Bot.HasInMonstersZone((int)preference[4]) || Bot.HasInSpellZone((int)preference[4]))
+                if (ABC.Contains(wanted)) { ABCWanted.Add(wanted); }
+            }
+            if (ABCWanted.Count == 1)
+            {
+                if (Bot.HasInGraveyard((int)ABCWanted[0]))
                 {
-                    //shift blue thunder up destructivly
-                    preference[4] = preference[5];
-                    preference[5] = preference[6];
-                    preference[6] = preference[7];
+                    preference.Add(CardID.DeltaTri);
                 }
             }
 
-            //swap falchion and tri if tri effect would get the last part of ABC
-            int ABCcount = 0;
-            CardID[] ABC = { CardID.AAssaultCore, CardID.BBusterDrake, CardID.CCrushWyvern };
-            //count unique ABC parts in grave or field
-            foreach (CardID card in ABC) { if (Bot.HasInMonstersZoneOrInGraveyard((int)card) || Bot.HasInSpellZone((int)card)) { ABCcount++; } }
-            //swap falchion and tri
-            if (ABCcount == 2) { preference[9] = CardID.DeltaTri; preference[10] = CardID.FalchionB; }
-            
-            //move jade knight if already on board
-            if (Bot.HasInMonstersZone((int)CardID.JadeKnight)) { preference[8] = preference[9]; }
+            //FaclchionB is always wanted here
+            preference.Add(CardID.FalchionB);
+
+            //tri + jadeknight goes here if skipped earlyer
+            if (!preference.Contains(CardID.DeltaTri)) { preference.Add(CardID.DeltaTri); }
+            if (!preference.Contains(CardID.JadeKnight)) { preference.Add(CardID.JadeKnight); }
+
+            //vicviper always goes here
+            preference.Add(CardID.VicViperT301);
+
+            //any duplicate ABC pieces 
+            if (!preference.Contains(CardID.BBusterDrake)) { preference.Add(CardID.BBusterDrake); }
+            if (!preference.Contains(CardID.CCrushWyvern)) { preference.Add(CardID.CCrushWyvern); }
+            if (!preference.Contains(CardID.AAssaultCore)) { preference.Add(CardID.AAssaultCore); }
+
+            //honest always goes here
+            preference.Add(CardID.Honest);
 
             return preference;
         }
@@ -124,7 +154,7 @@ namespace WindBot.Game.AI.Decks
         /// </summary>
         /// <param name="options">orderd list of target cards</param>
         /// <returns>the selected card</returns>
-        public CardID chooseFromHand(CardID[] options)
+        public CardID chooseFromHand(IList<CardID> options)
         {
             foreach (CardID card in options)
             {
