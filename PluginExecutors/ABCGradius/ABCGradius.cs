@@ -23,6 +23,7 @@ namespace WindBot.Game.AI.Decks
             SilverGadget = 29021114,
             LordBritishSpaceFighter = 35514096,
             VictoryViperXX03 = 93130021,
+            VictoryViperXX03Token = 93130022,
             BBusterDrake = 77411244,
             AAssaultCore = 30012506,
             CCrushWyvern = 03405259,
@@ -36,6 +37,11 @@ namespace WindBot.Game.AI.Decks
         public SampleExecutor(GameAI ai, Duel duel)
             : base(ai, duel)
         {
+            //always activate missable conditionals
+            AddExecutor(ExecutorType.Activate, (int)CardID.JadeKnight, JadeKnightEffect);
+            AddExecutor(ExecutorType.Activate, (int)CardID.DeltaTri, DeltaTriEffect);
+            AddExecutor(ExecutorType.Activate, (int)CardID.VictoryViperXX03, VictoryViperEffect);
+
             //Shotguns
             AddExecutor(ExecutorType.Activate, (int)CardID.PotOfExtravagance, POEeffect);
             AddExecutor(ExecutorType.Activate, (int)CardID.VicViperT301);
@@ -51,9 +57,6 @@ namespace WindBot.Game.AI.Decks
             //Gadget Specials
             AddExecutor(ExecutorType.Activate, (int)CardID.SilverGadget, GadgetEffect);
             AddExecutor(ExecutorType.Activate, (int)CardID.GoldGadget, GadgetEffect);
-
-            //always activate conditionals
-            AddExecutor(ExecutorType.Activate, (int)CardID.JadeKnight, JadeKnightEffect);
             
         }
 
@@ -150,6 +153,51 @@ namespace WindBot.Game.AI.Decks
         public bool JadeKnightEffect()
         {
             AI.SelectCard(getMainMonsterToHandPreferenceOrder().Cast<int>().ToArray());
+            return true;
+        }
+
+        public bool DeltaTriEffect()
+        {
+            //option 0
+            IList<CardID> preference = (List<CardID>)(new List<CardID> { CardID.DeltaTri }.Concat(ABCDestroyEffectPreference()));
+            foreach (CardID pref in preference)
+            {
+                foreach (ClientCard equiped in AI.Duel.CurrentChain.Last().EquipCards)
+                {
+                    if (equiped.Id == (int)pref)
+                    {
+                        //move to back
+                        preference.Remove(pref);
+                        preference.Add(pref);
+                    }
+                }
+            }
+            AI.SelectCard(preference.Cast<int>().ToArray());
+
+
+            return true;
+        }
+
+        public bool VictoryViperEffect()
+        {
+            ClientCard activeVictoryViper = AI.Duel.CurrentChain.Last();
+            
+            if(!Bot.HasInMonstersZone((int)CardID.VictoryViperXX03Token))
+            {
+                AI.SelectOption(2);
+                return true;
+            }
+            
+            foreach(ClientCard mon in Enemy.GetMonsters())
+            {
+                if((mon.Position == (int)CardPosition.FaceUpAttack && activeVictoryViper.Attack <= mon.Attack && activeVictoryViper.Attack + 400 >= mon.Attack) || (mon.Position == (int)CardPosition.FaceUpDefence && activeVictoryViper.Defense <= mon.Defense && activeVictoryViper.Defense + 400 > mon.Defense))
+                {
+                    AI.SelectOption(0);
+                    return true;
+                }
+            }
+
+            AI.SelectOption(2);
             return true;
         }
 
