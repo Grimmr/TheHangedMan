@@ -42,6 +42,7 @@ namespace WindBot.Game.AI.Decks
             AddExecutor(ExecutorType.Activate, (int)CardID.DeltaTri, DeltaTriEffect);
             AddExecutor(ExecutorType.Activate, (int)CardID.VictoryViperXX03, VictoryViperEffect);
             AddExecutor(ExecutorType.Activate, (int)CardID.LordBritishSpaceFighter, LordBritishEffect);
+            AddExecutor(ExecutorType.Activate, (int)CardID.FalchionB, FalchionBEffect);
 
             //Shotguns
             AddExecutor(ExecutorType.Activate, (int)CardID.PotOfExtravagance, POEeffect);
@@ -160,21 +161,8 @@ namespace WindBot.Game.AI.Decks
         public bool DeltaTriEffect()
         {
             //option 0
-            IList<CardID> preference = (List<CardID>)(new List<CardID> { CardID.DeltaTri }.Concat(ABCDestroyEffectPreference()));
-            foreach (CardID pref in preference)
-            {
-                foreach (ClientCard equiped in AI.Duel.CurrentChain.Last().EquipCards)
-                {
-                    if (equiped.Id == (int)pref)
-                    {
-                        //move to back
-                        preference.Remove(pref);
-                        preference.Add(pref);
-                    }
-                }
-            }
+            IList<CardID> preference = (List<CardID>)(new List<CardID> { CardID.DeltaTri }.Concat(triEquipPreference()));
             AI.SelectCard(preference.Cast<int>().ToArray());
-
 
             return true;
         }
@@ -222,6 +210,21 @@ namespace WindBot.Game.AI.Decks
 
             AI.SelectOption(2);
             AI.SelectOption(1);
+
+            return true;
+        }
+
+        public bool FalchionBEffect()
+        {
+            if(Bot.GetRemainingCount((int)CardID.CCrushWyvern, 3) >= 0)
+            {
+                AI.SelectOption(0);
+                AI.SelectCard((int)CardID.CCrushWyvern);
+                return true;
+            }
+
+            AI.SelectOption(1);
+            AI.SelectCard(getMainMonsterToFieldPreferenceOrder().Cast<int>().ToArray());
 
             return true;
         }
@@ -287,6 +290,24 @@ namespace WindBot.Game.AI.Decks
 
             //unreachable but needed sub par msvc reachability
             return new List<CardID> { CardID.AAssaultCore, CardID.BBusterDrake, CardID.CCrushWyvern };
+        }
+
+        private IList<CardID> triEquipPreference()
+        {
+            IList<CardID> preference = ABCDestroyEffectPreference();
+            foreach (CardID pref in preference)
+            {
+                foreach (ClientCard equiped in AI.Duel.CurrentChain.Last().EquipCards)
+                {
+                    if (equiped.Id == (int)pref)
+                    {
+                        //move to back
+                        preference.Remove(pref);
+                        preference.Add(pref);
+                    }
+                }
+            }
+            return preference;
         }
 
         private IList<CardID> getMainMonsterToHandPreferenceOrder()
@@ -387,9 +408,9 @@ namespace WindBot.Game.AI.Decks
             preference.Add(CardID.VictoryViperXX03);
 
             //each ABC part should only be here if it isn't already in play
-            if (!Bot.HasInMonstersZone((int)CardID.BBusterDrake) && !Bot.HasInSpellZone((int)CardID.BBusterDrake)) { preference.Add(CardID.BBusterDrake); }
-            if (!Bot.HasInMonstersZone((int)CardID.CCrushWyvern) && !Bot.HasInSpellZone((int)CardID.BBusterDrake)) { preference.Add(CardID.CCrushWyvern); }
-            if (!Bot.HasInMonstersZone((int)CardID.AAssaultCore) && !Bot.HasInSpellZone((int)CardID.BBusterDrake)) { preference.Add(CardID.AAssaultCore); }
+            if (!Bot.HasInMonstersZone((int)CardID.BBusterDrake) && !Bot.HasInSpellZone((int)CardID.BBusterDrake) && !Bot.HasInGraveyard((int)CardID.BBusterDrake)) { preference.Add(CardID.BBusterDrake); }
+            if (!Bot.HasInMonstersZone((int)CardID.CCrushWyvern) && !Bot.HasInSpellZone((int)CardID.CCrushWyvern) && !Bot.HasInGraveyard((int)CardID.CCrushWyvern)) { preference.Add(CardID.CCrushWyvern); }
+            if (!Bot.HasInMonstersZone((int)CardID.AAssaultCore) && !Bot.HasInSpellZone((int)CardID.AAssaultCore) && !Bot.HasInGraveyard((int)CardID.AAssaultCore)) { preference.Add(CardID.AAssaultCore); }
 
             //bluethunder is always wanted here
             preference.Add(CardID.BlueThunderT45);
