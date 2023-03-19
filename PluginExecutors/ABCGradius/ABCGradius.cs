@@ -14,6 +14,8 @@ namespace WindBot.Game.AI.Decks
     [Deck("ABCGradius", "AI_ABCGradius")]
     public class SampleExecutor : DefaultExecutor
     {
+        private bool requestHonest = false;
+        
         public enum CardID : int
         {
             PotOfExtravagance = 49238328,
@@ -34,7 +36,9 @@ namespace WindBot.Game.AI.Decks
             Honest = 37742478,
             PlatinumGadget = 40216089,
             ABCDragonBuster = 01561110,
+            LimiterRemoval = 2317160
         }
+
         public SampleExecutor(GameAI ai, Duel duel)
             : base(ai, duel)
         {
@@ -56,13 +60,22 @@ namespace WindBot.Game.AI.Decks
             //pre-summon effects
             AddExecutor(ExecutorType.Activate, (int)CardID.PlatinumGadget, GadgetEffect);
 
+            //LimiterRemoval
+            AddExecutor(ExecutorType.Activate, (int)CardID.LimiterRemoval, LimiterRemovalEffect);
+
             //Normals
             AddExecutor(ExecutorType.MonsterSet, (int)CardID.JadeKnight, NormalSummonCheck);
             AddExecutor(ExecutorType.Summon, NormalSummonCheck);
 
+            //Honest special zone
+            AddExecutor(ExecutorType.Activate, (int)CardID.Honest, HonestEffect);
+
             //Gadget Specials
             AddExecutor(ExecutorType.Activate, (int)CardID.SilverGadget, GadgetEffect);
             AddExecutor(ExecutorType.Activate, (int)CardID.GoldGadget, GadgetEffect);
+
+            //set limiter removal
+            AddExecutor(ExecutorType.SpellSet, (int)CardID.LimiterRemoval, LimiterRemovalSet);
             
         }
 
@@ -173,7 +186,7 @@ namespace WindBot.Game.AI.Decks
 
         public bool VictoryViperEffect()
         {
-            ClientCard activeVictoryViper = AI.Duel.CurrentChain.Last();
+            ClientCard activeVictoryViper = Duel.CurrentChain.Last();
             
             if(!Bot.HasInMonstersZone((int)CardID.VictoryViperXX03Token))
             {
@@ -196,7 +209,7 @@ namespace WindBot.Game.AI.Decks
 
         public bool LordBritishEffect()
         {
-            ClientCard activeLordBritsih = AI.Duel.CurrentChain.Last();
+            ClientCard activeLordBritsih = Duel.CurrentChain.Last();
             foreach (ClientCard mon in Enemy.GetMonsters())
             {
                 if ((mon.Position == (int)CardPosition.FaceUpAttack && activeLordBritsih.Attack <= mon.Attack && activeLordBritsih.Attack + 400 >= mon.Attack) || (mon.Position == (int)CardPosition.FaceUpDefence && activeLordBritsih.Attack <= mon.Defense && activeLordBritsih.Attack + 400 > mon.Defense))
@@ -313,6 +326,28 @@ namespace WindBot.Game.AI.Decks
             return false;
         }
 
+        public bool HonestEffect()
+        {
+            //return to hand
+            if (ActivateDescription == Util.GetStringId((int)CardID.Honest, 0))
+            {
+                return (Duel.Turn == 1 || Duel.Phase == DuelPhase.Main2) && Bot.GetMonsters().Count() > 1;
+            }
+
+            //unreachable return
+            return false;
+        }
+
+        public bool LimiterRemovalSet()
+        {
+            return Duel.Phase == DuelPhase.Main2;
+        }
+
+        public bool LimiterRemovalEffect()
+        {
+
+        }
+
         private bool ABCPartUnionEffect()
         {
             if (Bot.HasInMonstersZone((int)CardID.ABCDragonBuster))
@@ -344,6 +379,13 @@ namespace WindBot.Game.AI.Decks
             
 
             return base.OnSelectPosition(cardId, positions);
+        }
+
+        public override bool OnPreBattleBetween(ClientCard attacker, ClientCard defender)
+        {
+            
+            
+            return base.OnPreBattleBetween(attacker, defender);
         }
 
         private IList<CardID> ABCDestroyEffectPreference()
@@ -394,7 +436,7 @@ namespace WindBot.Game.AI.Decks
             IList<CardID> preference = ABCDestroyEffectPreference();
             foreach (CardID pref in preference)
             {
-                foreach (ClientCard equiped in AI.Duel.CurrentChain.Last().EquipCards)
+                foreach (ClientCard equiped in Duel.CurrentChain.Last().EquipCards)
                 {
                     if (equiped.Id == (int)pref)
                     {
