@@ -32,7 +32,8 @@ namespace WindBot.Game.AI.Decks
             FalchionB = 86170989,
             DeltaTri = 12079734,
             Honest = 37742478,
-            PlatinumGadget = 40216089
+            PlatinumGadget = 40216089,
+            ABCDragonBuster = 01561110,
         }
         public SampleExecutor(GameAI ai, Duel duel)
             : base(ai, duel)
@@ -43,6 +44,7 @@ namespace WindBot.Game.AI.Decks
             AddExecutor(ExecutorType.Activate, (int)CardID.VictoryViperXX03, VictoryViperEffect);
             AddExecutor(ExecutorType.Activate, (int)CardID.LordBritishSpaceFighter, LordBritishEffect);
             AddExecutor(ExecutorType.Activate, (int)CardID.FalchionB, FalchionBEffect);
+            AddExecutor(ExecutorType.Activate, (int)CardID.AAssaultCore, AAssaultCoreEffect);
 
             //Shotguns
             AddExecutor(ExecutorType.Activate, (int)CardID.PotOfExtravagance, POEeffect);
@@ -227,6 +229,63 @@ namespace WindBot.Game.AI.Decks
             AI.SelectCard(getMainMonsterToFieldPreferenceOrder().Cast<int>().ToArray());
 
             return true;
+        }
+
+        public bool AAssaultCoreEffect()
+        {
+            //equip effect
+            if (ActivateDescription == Util.GetStringId((int)CardID.AAssaultCore, 0))
+            {
+                return ABCPartUnionEffect();
+            }
+
+            //destroy effect
+            if (ActivateDescription == Util.GetStringId((int)CardID.AAssaultCore, 1))
+            {
+                IList<CardID> ABC = new List<CardID> { CardID.BBusterDrake, CardID.CCrushWyvern, CardID.AAssaultCore };
+                Dictionary<CardID, int> count = new Dictionary<CardID, int>();
+                count[CardID.AAssaultCore] = 0;
+                count[CardID.BBusterDrake] = 0;
+                count[CardID.CCrushWyvern] = 0;
+                foreach (ClientCard card in Bot.Graveyard.Concat(Bot.GetMonsters()).Concat(Bot.GetSpells()).ToList()) 
+                {
+                    if (ABC.Contains((CardID)card.Id)) { count[(CardID)card.Id]++; }
+                }
+                CardID validTarget = CardID.LordBritishSpaceFighter;
+                foreach (CardID card in ABC)
+                {
+                    if (count[card] > 1)
+                    {
+                        validTarget = card;
+                        break;
+                    }
+                }
+                if (validTarget == CardID.LordBritishSpaceFighter)
+                {
+                    return false;
+                }
+                else
+                {
+                    AI.SelectCard((int)validTarget);
+                    return true;
+                }
+            }
+
+            //unreachable return
+            return false;
+        }
+
+        private bool ABCPartUnionEffect()
+        {
+            if (Bot.HasInMonstersZone((int)CardID.ABCDragonBuster))
+            {
+                AI.SelectCard((int)CardID.ABCDragonBuster);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public override CardPosition OnSelectPosition(int cardId, IList<CardPosition> positions)
