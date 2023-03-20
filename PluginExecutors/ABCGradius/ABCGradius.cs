@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
 using System.Linq;
+using System.Threading;
 using WindBot;
 using WindBot.Game;
 using WindBot.Game.AI;
@@ -15,6 +16,7 @@ namespace WindBot.Game.AI.Decks
     public class SampleExecutor : DefaultExecutor
     {
         private int requestLimiterRemoval = 0;
+        private bool LimiterRemovalUsed = false;
         
         public enum CardID : int
         {
@@ -36,7 +38,8 @@ namespace WindBot.Game.AI.Decks
             Honest = 37742478,
             PlatinumGadget = 40216089,
             ABCDragonBuster = 01561110,
-            LimiterRemoval = 2317160
+            LimiterRemoval = 2317160,
+            GearGigantX = 28912357,
         }
 
         public SampleExecutor(GameAI ai, Duel duel)
@@ -59,6 +62,7 @@ namespace WindBot.Game.AI.Decks
 
             //pre-summon effects
             AddExecutor(ExecutorType.Activate, (int)CardID.PlatinumGadget, GadgetEffect);
+            AddExecutor(ExecutorType.Activate, (int)CardID.GearGigantX);
 
             //LimiterRemoval
             AddExecutor(ExecutorType.Activate, (int)CardID.LimiterRemoval, LimiterRemovalEffect);
@@ -66,6 +70,9 @@ namespace WindBot.Game.AI.Decks
             //Normals
             AddExecutor(ExecutorType.MonsterSet, (int)CardID.JadeKnight, NormalSummonCheck);
             AddExecutor(ExecutorType.Summon, NormalSummonCheck);
+
+            //post-summon effects
+            AddExecutor(ExecutorType.Activate, (int)CardID.ABCDragonBuster, ABCDragonBusterEffect);
 
             //Honest special zone
             AddExecutor(ExecutorType.Activate, (int)CardID.Honest, HonestEffect);
@@ -358,8 +365,54 @@ namespace WindBot.Game.AI.Decks
             if(LRcount >= requestLimiterRemoval)
             {
                 requestLimiterRemoval--;
+                LimiterRemovalUsed = true;
                 return true;
             }
+            return false;
+        }
+
+        public bool ABCDragonBusterEffect()
+        {
+            //banish effect
+            if (ActivateDescription == Util.GetStringId((int)CardID.ABCDragonBuster, 0) && (Enemy.GetMonsters().Count() > 0 || Enemy.GetSpells().Count() > 0))
+            {
+                AI.SelectCard(DiscardPreferenceOrder().Cast<int>().ToList());
+
+                //face up >3000
+                foreach (ClientCard card in Enemy.GetMonsters())
+                {
+                    if ((card.Position == (int)CardPosition.FaceUpAttack && Card.Attack >= 3000) || (card.Position == (int)CardPosition.FaceUpDefence && Card.Defense >= 3000))
+                    {
+                        AI.SelectNextCard(card);
+                        return true;
+                    }
+                }
+                //face down
+                if (Enemy.GetSpells().Count() > 0)
+                {
+                    AI.SelectNextCard(Enemy.GetSpells()[0]);
+                    return true;
+                }
+                AI.SelectNextCard(Enemy.GetMonsters()[0]);
+                return true;
+            }
+            //tag out
+            if(ActivateDescription == Util.GetStringId((int)CardID.ABCDragonBuster, 1))
+            {
+                if(Duel.Phase == DuelPhase.BattleStep && Bot.BattlingMonster.Id == (int)CardID.ABCDragonBuster && Enemy.BattlingMonster.RealPower >= Bot.BattlingMonster.RealPower)
+                {
+                    return true;
+                }
+
+                if(LimiterRemovalUsed && Duel.Phase == DuelPhase.End)
+                {
+                    return true;
+                }
+                return false;
+
+            }
+
+            //unreachable return
             return false;
         }
 
@@ -396,6 +449,50 @@ namespace WindBot.Game.AI.Decks
             return base.OnSelectPosition(cardId, positions);
         }
 
+        public override IList<ClientCard> OnSelectCard(IList<ClientCard> cards, int min, int max, long hint, bool cancelable)
+        {
+            if(Card.Id == (int)CardID.GearGigantX)
+            {
+                IList<CardID> prefrence = getMainMonsterToHandPreferenceOrder();
+                IList<CardID> ABC = new List<CardID> { CardID.AAssaultCore, CardID.BBusterDrake, CardID.CCrushWyvern };
+                ClientCard selection = null;
+                while (true)
+                {
+                    
+                    foreach(CardID id in prefrence)
+                    {
+                        bool foundID = false;
+                        foreach(ClientCard card in cards)
+                        {
+                            if(card.Id == (int)id) { selection = card; foundID=true; if (card.Location == CardLocation.Deck) { break; } }
+                        }
+                        if(foundID) { break; }
+                    }
+                    if(ABC.Contains((CardID)selection.Id) && selection.Location == CardLocation.Grave)
+                    {
+                        int count = 0;
+                        foreach(ClientCard card in Bot.Graveyard)
+                        {
+                            if(card.Id == selection.Id)
+                            {
+                                count++;
+                            }
+                        }
+                        if(count == 1) 
+                        {
+                            prefrence.RemoveAt(0);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+                return new List<ClientCard> { selection };
+            }
+            return base.OnSelectCard(cards, min, max, hint, cancelable);
+        }
+
         public override BattlePhaseAction OnBattle(IList<ClientCard> attackers, IList<ClientCard> defenders)
         {
             requestLimiterRemoval = calculateNeededLimiterRemoval(attackers, defenders);
@@ -408,6 +505,12 @@ namespace WindBot.Game.AI.Decks
             }
 
             return base.OnBattle(attackers, defenders);
+        }
+
+        public override void OnNewTurn()
+        {
+            LimiterRemovalUsed = false;
+            base.OnNewTurn();
         }
 
         private int calculateNeededLimiterRemoval(IList<ClientCard> attackers, IList<ClientCard> defenders)
@@ -605,7 +708,39 @@ namespace WindBot.Game.AI.Decks
 
             return preference;
         }
-        
+
+        private IList<CardID> DiscardPreferenceOrder()
+        {
+            IList<CardID> preference = new List<CardID>();
+            
+            //abc if not in play
+            if (!Bot.HasInMonstersZone((int)CardID.BBusterDrake) && !Bot.HasInSpellZone((int)CardID.BBusterDrake) && !Bot.HasInGraveyard((int)CardID.BBusterDrake)) { preference.Add(CardID.BBusterDrake); }
+            if (!Bot.HasInMonstersZone((int)CardID.CCrushWyvern) && !Bot.HasInSpellZone((int)CardID.CCrushWyvern) && !Bot.HasInGraveyard((int)CardID.CCrushWyvern)) { preference.Add(CardID.CCrushWyvern); }
+            if (!Bot.HasInMonstersZone((int)CardID.AAssaultCore) && !Bot.HasInSpellZone((int)CardID.AAssaultCore) && !Bot.HasInGraveyard((int)CardID.AAssaultCore)) { preference.Add(CardID.AAssaultCore); }
+
+            //any duplicate ABC pieces 
+            if (!preference.Contains(CardID.BBusterDrake)) { preference.Add(CardID.BBusterDrake); }
+            if (!preference.Contains(CardID.CCrushWyvern)) { preference.Add(CardID.CCrushWyvern); }
+            if (!preference.Contains(CardID.AAssaultCore)) { preference.Add(CardID.AAssaultCore); }
+
+            //fixed order
+            preference.Add(CardID.PotOfExtravagance);
+            preference.Add(CardID.VicViperT301);
+            preference.Add(CardID.JadeKnight);
+            preference.Add(CardID.DeltaTri);
+            preference.Add(CardID.FalchionB);
+            preference.Add(CardID.BlueThunderT45);
+            preference.Add(CardID.VictoryViperXX03);
+            preference.Add(CardID.LordBritishSpaceFighter);
+            preference.Add(CardID.GoldGadget);
+            preference.Add(CardID.SilverGadget);
+            preference.Add(CardID.UnionHangar);
+            preference.Add(CardID.LimiterRemoval);
+            preference.Add(CardID.Honest);
+
+            return preference;
+        }
+
         /// <summary>
         /// gets the prority order for summoning or searching monsters
         /// 
