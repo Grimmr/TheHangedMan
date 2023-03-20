@@ -14,7 +14,7 @@ namespace WindBot.Game.AI.Decks
     [Deck("ABCGradius", "AI_ABCGradius")]
     public class SampleExecutor : DefaultExecutor
     {
-        private bool requestHonest = false;
+        private int requestLimiterRemoval = 0;
         
         public enum CardID : int
         {
@@ -345,7 +345,22 @@ namespace WindBot.Game.AI.Decks
 
         public bool LimiterRemovalEffect()
         {
-
+            if(Duel.Phase != DuelPhase.Damage) { return false; }
+            
+            int LRcount = 0;
+            foreach(ClientCard card in Bot.Hand.Concat(Bot.GetSpells()))
+            {
+                if(card.Id == (int)CardID.LimiterRemoval)
+                {
+                    LRcount++;
+                }
+            }
+            if(LRcount >= requestLimiterRemoval)
+            {
+                requestLimiterRemoval--;
+                return true;
+            }
+            return false;
         }
 
         private bool ABCPartUnionEffect()
@@ -379,6 +394,82 @@ namespace WindBot.Game.AI.Decks
             
 
             return base.OnSelectPosition(cardId, positions);
+        }
+
+        public override BattlePhaseAction OnBattle(IList<ClientCard> attackers, IList<ClientCard> defenders)
+        {
+            requestLimiterRemoval = calculateNeededLimiterRemoval(attackers, defenders);
+            if (requestLimiterRemoval >= 1)
+            {
+                foreach(ClientCard card in attackers)
+                {
+                    card.RealPower = card.RealPower * (int)Math.Pow(2, requestLimiterRemoval);
+                }
+            }
+
+            return base.OnBattle(attackers, defenders);
+        }
+
+        private int calculateNeededLimiterRemoval(IList<ClientCard> attackers, IList<ClientCard> defenders)
+        {
+            int ret = 0;
+            if (attackers.Count() == 0) { return 0; }
+            if (defenders.Count() == 0)
+            {
+                int totalAtk = 0;
+                foreach(ClientCard card in attackers)
+                {
+                    totalAtk += card.Attack;
+                }
+
+                for(int i = 0; i < 4; i++)
+                {
+                    if (totalAtk > Enemy.LifePoints)
+                    {
+                        ret = i;
+                        break;
+                    }
+                    totalAtk *= 2;
+                }
+            }
+            if (defenders.Count() > 0)
+            {
+                ClientCard bestAttacker = attackers[0];
+                foreach(ClientCard card in attackers)
+                {
+                    if(card.Attack >= bestAttacker.Attack) { bestAttacker = card;  }
+                }
+
+                ClientCard bestDefender = defenders[0];
+                int bestStat = 0;
+                foreach(ClientCard card in defenders)
+                {
+                    int releventStat = card.Position == (int)CardPosition.FaceUpAttack ? card.Attack : card.Defense;
+                    if(releventStat >= bestStat)
+                    {
+                        bestStat = releventStat;
+                        bestDefender = card;
+                    }
+                }
+
+                int atk = bestAttacker.Attack;
+                for (int i = 0; i < 4; i++)
+                {
+                    if (atk > bestStat)
+                    {
+                        ret = i;
+                        break;
+                    }
+                    atk *= 2;
+                }
+                IList<ClientCard> attackersCopy = attackers.ToList();
+                IList<ClientCard> defendersCopy = defenders.ToList();
+                attackersCopy.Remove(bestAttacker);
+                defendersCopy.Remove(bestDefender);
+                ret = Math.Max(ret, calculateNeededLimiterRemoval(attackersCopy, defendersCopy));
+            }
+
+            return ret;
         }
 
         public override bool OnPreBattleBetween(ClientCard attacker, ClientCard defender)
