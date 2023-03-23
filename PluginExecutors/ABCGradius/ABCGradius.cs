@@ -26,12 +26,14 @@ namespace WindBot.Game.AI.Decks
             GoldGadget = 55010259,
             SilverGadget = 29021114,
             LordBritishSpaceFighter = 35514096,
+            LordBritishSpaceFighterToken = 35514097,
             VictoryViperXX03 = 93130021,
             VictoryViperXX03Token = 93130022,
             BBusterDrake = 77411244,
             AAssaultCore = 30012506,
             CCrushWyvern = 03405259,
             BlueThunderT45 = 14089428,
+            BlueThunderT45Token = 14089429,
             JadeKnight = 44364207,
             FalchionB = 86170989,
             DeltaTri = 12079734,
@@ -67,9 +69,16 @@ namespace WindBot.Game.AI.Decks
             //LimiterRemoval
             AddExecutor(ExecutorType.Activate, (int)CardID.LimiterRemoval, LimiterRemovalEffect);
 
+            //specials
+            AddExecutor(ExecutorType.SpSummon, (int)CardID.GearGigantX, GigantSummonCheck);
+
             //Normals
             AddExecutor(ExecutorType.MonsterSet, (int)CardID.JadeKnight, NormalSummonCheck);
             AddExecutor(ExecutorType.Summon, NormalSummonCheck);
+
+            //specials
+            AddExecutor(ExecutorType.SpSummon, (int)CardID.PlatinumGadget, PlatinumSummonCheck);
+            AddExecutor(ExecutorType.SpSummon, (int)CardID.ABCDragonBuster, ABCDSummonCheck);
 
             //post-summon effects
             AddExecutor(ExecutorType.Activate, (int)CardID.ABCDragonBuster, ABCDragonBusterEffect);
@@ -82,6 +91,7 @@ namespace WindBot.Game.AI.Decks
             AddExecutor(ExecutorType.Activate, (int)CardID.GoldGadget, GadgetEffect);
 
             //set limiter removal
+            AddExecutor(ExecutorType.GoToMainPhase2);
             AddExecutor(ExecutorType.SpellSet, (int)CardID.LimiterRemoval, LimiterRemovalSet);
             
         }
@@ -427,6 +437,145 @@ namespace WindBot.Game.AI.Decks
             {
                 return false;
             }
+        }
+
+        public bool ABCDSummonCheck()
+        {
+            IList<CardID> ABC = new List<CardID> { CardID.AAssaultCore, CardID.BBusterDrake, CardID.CCrushWyvern };
+            IList<ClientCard> mats = new List<ClientCard>();
+            foreach(ClientCard card in InstantiatedMaterialPreference())
+            {
+                if(ABC.Contains((CardID)card.Id) && !mats.Contains(card))
+                {
+                    mats.Add(card);
+                }
+            }
+            AI.SelectMaterials(mats);
+            return true;
+        }
+
+        public bool GigantSummonCheck()
+        {
+            
+            foreach(ClientCard card in Bot.GetMonsters())
+            {
+                //only dupe if current ones have no mats
+                if (card.Id == (int)CardID.GearGigantX && card.Overlays.Count > 0) 
+                {
+                    return false;
+                }
+
+                //not if vic viper on field
+                if(card.Id == (int)CardID.VicViperT301)
+                {
+                    return true;
+                }
+            }
+
+            AI.SelectMaterials(selectMats(new CardID[] { CardID.AAssaultCore, CardID.BBusterDrake, CardID.CCrushWyvern, CardID.DeltaTri, CardID.BlueThunderT45, CardID.SilverGadget, CardID.LordBritishSpaceFighter, CardID.JadeKnight, CardID.GoldGadget, CardID.FalchionB, CardID.VictoryViperXX03 }, 2));
+            
+            return true;
+        }
+
+        public bool PlatinumSummonCheck()
+        {   
+            //only one plat gadget
+            foreach(ClientCard card in Bot.GetMonsters())
+            {
+                if(card.Id == (int)CardID.PlatinumGadget)
+                {
+                    return false;
+                }
+            }
+
+            //only use if summon effect is live
+            foreach(ClientCard card in Bot.Hand)
+            {
+                if(card.Race == (int)CardRace.Machine)
+                {
+                    AI.SelectMaterials(selectMats(new CardID[] { CardID.AAssaultCore, CardID.BBusterDrake, CardID.CCrushWyvern, CardID.DeltaTri, CardID.BlueThunderT45, CardID.SilverGadget, CardID.LordBritishSpaceFighter, CardID.JadeKnight, CardID.GoldGadget, CardID.FalchionB, CardID.VictoryViperXX03, CardID.BlueThunderT45Token, CardID.LordBritishSpaceFighterToken, CardID.VictoryViperXX03Token }, 2));
+                    return true;
+                }
+            }
+
+            //dont do otherwise
+            return false;
+        }
+
+        private IList<ClientCard> selectMats(CardID[] valid, int no)
+        {
+            IList<ClientCard> mats = new List<ClientCard>();
+            foreach(ClientCard card in InstantiatedMaterialPreference())
+            {
+                if(valid.Contains((CardID)card.Id))
+                {
+                    mats.Add(card);
+                    if(mats.Count == no)
+                    {
+                        return mats;
+                    }    
+                }
+            }
+
+            return mats;
+        }
+
+        private IList<ClientCard> InstantiatedMaterialPreference()
+        {
+            IList<ClientCard> preference = new List<ClientCard>();
+            IList<CardID> ABC = new List<CardID> { CardID.AAssaultCore, CardID.BBusterDrake, CardID.CCrushWyvern };
+            //first cards with ABC
+            foreach (ClientCard card in Bot.GetMonsters())
+            {
+                foreach(ClientCard equip in card.EquipCards)
+                {
+                    if(ABC.Contains((CardID)equip.Id))
+                    {
+                        preference.Add(card);
+                    }
+                }
+            }
+            //ABC in grave
+            foreach (ClientCard card in Bot.Graveyard)
+            {
+                if(ABC.Contains((CardID)card.Id))
+                {
+                    preference.Add(card);
+                }
+            }
+            //cards on field sorted by preference
+            foreach(CardID pref in MaterialPrefernce())
+            {
+                foreach(ClientCard card in Bot.GetMonsters())
+                {
+                    if(card.Id == (int)pref)
+                    {
+                        preference.Add(card);
+                    }
+                }
+            }
+
+            return preference;
+        }
+
+        private IList<CardID> MaterialPrefernce()
+        {
+            IList<CardID> preference = new List<CardID>();
+            //fixed order
+            preference.Add(CardID.LordBritishSpaceFighterToken);
+            preference.Add(CardID.BlueThunderT45Token);
+            preference.Add(CardID.GoldGadget);
+            preference.Add(CardID.SilverGadget);
+            preference.Add(CardID.VictoryViperXX03Token);
+            preference.Add(CardID.JadeKnight);
+            preference.Add(CardID.DeltaTri);
+            preference.Add(CardID.FalchionB);
+            preference.Add(CardID.BlueThunderT45);
+            preference.Add(CardID.VictoryViperXX03);
+            preference.Add(CardID.VicViperT301);
+            preference.Add(CardID.LordBritishSpaceFighter);
+
+            return preference;
         }
 
         public override CardPosition OnSelectPosition(int cardId, IList<CardPosition> positions)
