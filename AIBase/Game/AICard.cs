@@ -81,7 +81,7 @@ namespace AIBase.Game
             SummonSource = copy.SummonSource;
         }
 
-        public AICard(ClientCard card, ClientField field)
+        protected AICard(ClientCard card, ClientField field)
         {
             TrueName = (CardName)card.Id;
             EffectiveName = (CardName)card.Alias;
