@@ -15,44 +15,71 @@ namespace AIBase.Game
     public class AIGameState
     {
         public AIDuel Duel;
-        public List<AIDuel> PreviousStates;
+        public List<Tuple<int,AIDuel>> PreviousStates;
         public List<Action> Actions;
-        public int NormalAvailible;
+        public int PC;
 
         public AIGameState(AIGameState copy)
         {
-            PreviousStates.Add(copy.Duel);
-            Duel = new AIDuel(copy.Duel);
             Actions = copy.Actions.ToList();
-            NormalAvailible = copy.NormalAvailible;
+            PreviousStates = copy.PreviousStates.ToList();
+            PreviousStates.Add(new Tuple<int, AIDuel>(Actions.Count(), copy.Duel));
+            Duel = new AIDuel(copy.Duel);
+            PC = copy.PC;
+        }
+
+        public AIGameState(Duel duel, bool normal=true)
+        {
+            PreviousStates = new List<Tuple<int, AIDuel>>();
+            Duel = new AIDuel(duel);
+            Actions = new List<Action>();
+            PC = 0;
         }
 
         public IList<AIGameState> GenerateOptions()
         {
-            IList<AIGameState> options = new List<AIGameState>();
+            IList<AIGameState> protoOptions = new List<AIGameState>();
     
             //consider cards in hand
             foreach(AICard card in Duel.Bot.Hand)
             {
                 //normal summon
-                if (NormalAvailible >= 1 && card.Type.isMonsterType() && (Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2) && Duel.CurrentChain.Count() == 0)
-                { 
-                    options.Concat(GenerateNormalSummonsFromCard(card));  
+                if (Duel.TurnPlayer == Player.Bot && CanNormal() && card.Type.isMonsterType() && (Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2) && Duel.CurrentChain.Count() == 0)
+                {
+                    protoOptions = protoOptions.Concat(GenerateNormalSummonsFromCard(card)).ToList();  
                 }  
             }
 
             //consider PhaseChange options
-            if(Duel.ActiveBattle == null && Duel.CurrentChain.Count() == 0)
+            if(Duel.TurnPlayer == Player.Bot && Duel.CurrentChain.Count() == 0)
             {
                 foreach(DuelPhase p in FollowPhases(Duel.Phase))
                 {
                     AIGameState outcome = new AIGameState(this);
-                    outcome.Actions.Add(new GoToPhase(p));
+                    //only add an action if it makes sense
+                    if (p == DuelPhase.BattleStart || p == DuelPhase.End || p == DuelPhase.Main2)
+                    {
+                        outcome.Actions.Add(new GoToPhase(p));
+                    }
                     outcome.Duel.Phase = p;
-                    options.Add(outcome);
+                    protoOptions.Add(outcome);
                 }
             }
 
+            //if there are any follow states return them not these
+            IList<AIGameState> options = new List<AIGameState>();
+            foreach(AIGameState state in protoOptions)
+            {
+                IList<AIGameState> follow = state.GenerateOptions();
+                if (follow.Count != 0)
+                {
+                    options = options.Concat(follow).ToList();
+                }
+                else
+                {
+                    options.Add(state);
+                }
+            }
 
             return options;
         }
@@ -64,7 +91,8 @@ namespace AIBase.Game
                 case DuelPhase.Draw: return new List<DuelPhase> { DuelPhase.Standby };
                 case DuelPhase.Standby: return new List<DuelPhase> { DuelPhase.Main1 };
                 case DuelPhase.Main1: return new List<DuelPhase> { DuelPhase.BattleStart, DuelPhase.End };
-                case DuelPhase.BattleStart: return new List<DuelPhase> { DuelPhase.Main2, DuelPhase.End };
+                case DuelPhase.BattleStart: return new List<DuelPhase> { DuelPhase.BattleStep };
+                case DuelPhase.BattleStep: return new List<DuelPhase> { DuelPhase.Main2, DuelPhase.End };
                 case DuelPhase.Main2: return new List<DuelPhase> { DuelPhase.End };
                 default: return new List<DuelPhase>();
             }
@@ -96,6 +124,23 @@ namespace AIBase.Game
             }
 
             return options;
+        }
+
+        public Action GetNextAction()
+        {
+            return Actions[PC];
+        }
+
+        private bool CanNormal()
+        {
+            for(int i = Actions.Count()-1; i >= 0; i--)
+            {
+                if (Actions[i] is NormalSummon)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
     

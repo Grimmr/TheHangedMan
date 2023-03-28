@@ -17,10 +17,14 @@ namespace AIBase.Game
         public Func<bool, AIGameState> Precondition;
         public Func<AIGameState[], AIGameState> PostConditionCost; //pre chain
         public Func<AIGameState[], AIGameState> PostConditionEffect; //activation in chain
+        public IList<EffectTag> tags;
+        public AICard parent;
     }
 
     public class AICard
     {
+        public ClientCard source;
+        
         public CardName TrueName;
         public CardName EffectiveName;
 
@@ -30,12 +34,14 @@ namespace AIBase.Game
         public int Level;
         public int Rank;
         public int LinkCount;
+        public int LScale;
+        public int RScale;
         public HashSet<Direction> LinkMarkers;
         public CardBasicType Type;
-        public bool Effect;
         public bool Tuner;
-        public MonsterAttribute Attr;
-        public MonsterRace Race;
+        public bool Pend;
+        public CardAttribute Attr;
+        public CardRace Race;
         public int Atk;
         public int Def;
         public int BaseAtk;
@@ -47,14 +53,11 @@ namespace AIBase.Game
         public SummonMethod SummonSource;
 
         public IList<CardEffect> Effects;
-
-        protected AICard()
-        {
-
-        }
         
         public AICard(AICard copy)
         {
+            source = copy.source;
+            
             TrueName = copy.TrueName;
             EffectiveName = copy.EffectiveName;
             Position = copy.Position;
@@ -62,11 +65,12 @@ namespace AIBase.Game
             Location = copy.Location;
             Level = copy.Level;
             Rank = copy.Rank;
+            LScale = copy.LScale;
+            RScale = copy.RScale;
             LinkCount = copy.LinkCount;
             LinkMarkers = new HashSet<Direction>();
             foreach (Direction dir in copy.LinkMarkers) { LinkMarkers.Add(dir); }
             Type = copy.Type;
-            Effect = copy.Effect;
             Tuner = copy.Tuner;
             Attr = copy.Attr;
             Race = copy.Race;
@@ -79,10 +83,20 @@ namespace AIBase.Game
             Controller = copy.Controller;
             Negated = copy.Negated;
             SummonSource = copy.SummonSource;
+            Effects = copy.Effects;
+
+            
         }
 
-        protected AICard(ClientCard card, ClientField field)
+        public static AICard FromClientCard(ClientCard card, ClientField field)
         {
+            return new AICard(card, field);
+        }
+
+        public AICard(ClientCard card, ClientField field)
+        {
+            source = card;
+            
             TrueName = (CardName)card.Id;
             EffectiveName = (CardName)card.Alias;
             Position = ((CardPosition)card.Position).ToBattlePos();
@@ -90,6 +104,8 @@ namespace AIBase.Game
             Location = field.GetMonstersInExtraZone().Contains(card) ? CardLoc.ExtraMonsterZone : card.Location.ToCardLoc();
             Level = card.Level;
             Rank = card.Rank;
+            LScale = card.LScale;
+            RScale = card.RScale;
             
             LinkCount = card.LinkCount;
             LinkMarkers = new HashSet<Direction>();
@@ -98,13 +114,38 @@ namespace AIBase.Game
                 if (card.HasLinkMarker((int)d)) { d.ToDirection(); }
             }
 
-            //TODO card type and on
+            Type = ((CardType)card.Type).ToCardBasicType();
+            Tuner = ((CardType)card.Type | CardType.Tuner) == (CardType)card.Type;
+            Race = (CardRace)card.Race;
+            Attr = (CardAttribute)card.Attribute;
+            Atk = card.Attack;
+            Def = card.Defense;
+            BaseAtk = card.BaseAttack;
+            BaseDef = card.BaseDefense;
+            
+            Overlays = new List<CardName>();
+            foreach (int id in card.Overlays)
+            {
+                Overlays.Add((CardName)id);
+            }
+
+            Owner = card.Owner == 0? Player.Bot : Player.Enemy; //this might need to flip
+            Controller = card.Controller == 0? Player.Bot : Player.Enemy; //^^^
+            Negated = card.Disabled != 0; //^^^
+            SummonSource = card.IsSpecialSummoned ? SummonMethod.Special : SummonMethod.Normal;
+
+            Effects = new List<CardEffect>();
 
         }
 
         public virtual bool NormalSummonCondition()
         {
             return Type.isMonsterType() && Level <= 4;
+        }
+
+        public override string ToString()
+        {
+            return TrueName.ToString();
         }
     }
 }

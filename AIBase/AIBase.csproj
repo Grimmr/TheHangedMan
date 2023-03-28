@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>AIBase</RootNamespace>
     <AssemblyName>AIBase</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
@@ -46,17 +46,18 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AIExecutor\AIExecutor.cs" />
     <Compile Include="Enums\BattlePos.cs" />
     <Compile Include="Enums\CardLoc.cs" />
     <Compile Include="Enums\CardName.cs" />
     <Compile Include="Enums\CardBasicType.cs" />
     <Compile Include="Enums\Direction.cs" />
+    <Compile Include="Enums\EffectTag.cs" />
     <Compile Include="Enums\EffectTrigger.cs" />
-    <Compile Include="Enums\MonsterAttribute.cs" />
-    <Compile Include="Enums\MonsterRace.cs" />
     <Compile Include="Enums\Player.cs" />
     <Compile Include="Enums\SummonMethod.cs" />
     <Compile Include="Game\Action.cs" />
+    <Compile Include="Game\Actions\GoToPhase.cs" />
     <Compile Include="Game\Actions\NormalSummon.cs" />
     <Compile Include="Game\Actions\SelectZone.cs" />
     <Compile Include="Game\AIExecutor.cs" />
@@ -66,7 +67,6 @@
     <Compile Include="Game\AIPlayerField.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="AIExecutor\" />
     <Folder Include="Cards\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

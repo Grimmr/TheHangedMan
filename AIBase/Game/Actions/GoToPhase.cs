@@ -9,11 +9,16 @@ namespace AIBase.Game.Actions
 {
     public class GoToPhase : Action
     {
-        public DuelPhase phase;
+        public DuelPhase Phase;
 
         public GoToPhase(DuelPhase p)
         {
-            phase = p;
+            Phase = p;
+        }
+
+        public override string ToString()
+        {
+            return "GOTO_PHASE " + Phase.ToString();
         }
     }
 }

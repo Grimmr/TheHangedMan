@@ -11,5 +11,6 @@ namespace AIBase.Game
 {
     public abstract class Action
     {
+        public override abstract String ToString();
     }
 }

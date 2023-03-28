@@ -5,12 +5,13 @@ using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WindBot.Game;
 using YGOSharp.OCGWrapper.Enums;
 
 namespace AIBase.Game
 {
-    using ChainLink = Tuple<AICard, bool, AICard>;
-    using Battle = Tuple<Player, bool, AICard, AICard>;
+    using ChainLink = Tuple<AICard, CardEffect, AICard>;
+    using Battle = Tuple<Player, AICard, AICard>;
     public class AIDuel
     {
         public AIPlayerField Bot;
@@ -21,7 +22,7 @@ namespace AIBase.Game
         
         public DuelPhase Phase;
         public bool PhaseEnd;
-        public Battle ActiveBattle;
+        public Player AttackingPlayer;
 
         public Player LastChainPlayer;
 
@@ -36,13 +37,28 @@ namespace AIBase.Game
             TurnPlayer = copy.TurnPlayer;
             Phase = copy.Phase;
             PhaseEnd = copy.PhaseEnd;
-            ActiveBattle = new Battle(copy.ActiveBattle.Item1, copy.ActiveBattle.Item2, new AICard(copy.ActiveBattle.Item3), AICard(copy.ActiveBattle.Item4));
+            AttackingPlayer = copy.AttackingPlayer;
             LastChainPlayer = copy.LastChainPlayer;
-            CurrentChain = new List<Tuple<AICard, bool, AICard>>();
+            CurrentChain = new List<ChainLink>();
             foreach(ChainLink link in copy.CurrentChain)
             {
                 CurrentChain.Add(new ChainLink(new AICard(link.Item1), link.Item2, new AICard(link.Item1)));
             }
+        }
+
+        public AIDuel(Duel duel)
+        {
+            Bot = new AIPlayerField(duel.Fields[0]); //might need swapping vvvvv
+            Enemy = new AIPlayerField(duel.Fields[1]); //might need swapping ^^^
+            TurnCount = duel.Turn;
+            TurnPlayer = duel.Player == 0 ? Player.Bot : Player.Enemy; //might need swaping
+            Phase = duel.Phase;
+            PhaseEnd = duel.MainPhaseEnd;
+            AttackingPlayer = duel.Fields[0].UnderAttack ? Player.Enemy : Player.Bot;
+            LastChainPlayer = duel.LastChainPlayer == 0 ? Player.Bot : Player.Enemy;
+
+            //don't copy over chain as I don't understand the structure in windbot duel
+            CurrentChain = new List<ChainLink>();
         }
     }
 }

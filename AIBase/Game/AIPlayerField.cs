@@ -18,7 +18,90 @@ namespace AIBase.Game
         public IList<AICard> Deck;
         public IList<AICard> ExtraDeck;
 
+        public AICard FightingCard;
+
         public int LP;
+
+        public AIPlayerField(ClientField field)
+        {
+            Hand = new List<AICard>();
+            if (field.Hand != null)
+            {
+                foreach (ClientCard card in field.Hand)
+                {
+                    if (card == null) { Hand.Add(null); }
+                    else { Hand.Add(AICard.FromClientCard(card, field)); }
+                }
+            }
+
+            MonsterZones = new List<AICard>();
+            if (field.MonsterZone != null)
+            {
+                foreach (ClientCard card in field.MonsterZone)
+                {
+                    if (card == null) { MonsterZones.Add(null); continue; }
+                    AICard monster = AICard.FromClientCard(card, field);
+                    MonsterZones.Add(monster);
+
+                    if (field.BattlingMonster == card)
+                    {
+                        FightingCard = monster;
+                    }
+                }
+            }
+
+            SpellZones = new List<AICard>();
+            if (field.SpellZone != null)
+            {
+                foreach (ClientCard card in field.SpellZone)
+                {
+                    if (card == null) { SpellZones.Add(null); }
+                    else { SpellZones.Add(AICard.FromClientCard(card, field)); }
+                }
+            }
+
+            Graveyard = new List<AICard>();
+            if (field.Graveyard != null)
+            {
+                foreach (ClientCard card in field.Graveyard)
+                {
+                    if (card == null) { Graveyard.Add(null); }
+                    else { Graveyard.Add(AICard.FromClientCard(card, field)); }
+                }
+            }
+
+            Banished = new List<AICard>();
+            if (field.Banished != null)
+            {
+                foreach (ClientCard card in field.Banished)
+                {
+                    if (card == null) { Banished.Add(null); }
+                    else { Banished.Add(AICard.FromClientCard(card, field)); }
+                }
+            }
+
+            Deck = new List<AICard>();
+            if (field.Deck != null)
+            {
+                foreach (ClientCard card in field.Deck)
+                {
+                    if (card == null) { Deck.Add(null); }
+                    else { Deck.Add(AICard.FromClientCard(card, field)); }
+                }
+            }
+
+            ExtraDeck = new List<AICard>();
+            if (field.ExtraDeck != null)
+            {
+                foreach (ClientCard card in field.ExtraDeck)
+                {
+                    if (card == null) { ExtraDeck.Add(null); }
+                    else { ExtraDeck.Add(AICard.FromClientCard(card, field)); }
+                }
+            }
+
+            LP = field.LifePoints;
+        }
 
         public AIPlayerField(AIPlayerField copy)
         {
@@ -70,6 +153,8 @@ namespace AIBase.Game
                 if (card == null) { ExtraDeck.Add(null); }
                 else { ExtraDeck.Add(new AICard(card)); }
             }
+
+            FightingCard = copy.FightingCard;
 
             LP = copy.LP;
         }
