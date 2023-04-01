@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AIBase.Enums;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,13 +11,7 @@ namespace AIBase.Game
 {
     public class AIPlayerField
     {
-        public IList<AICard> Hand;
-        public IList<AICard> MonsterZones;
-        public IList<AICard> SpellZones;
-        public IList<AICard> Graveyard;
-        public IList<AICard> Banished;
-        public IList<AICard> Deck;
-        public IList<AICard> ExtraDeck;
+        public Dictionary<CardLoc, IList<AICard>> Locations;
 
         public AICard FightingCard;
 
@@ -24,24 +19,25 @@ namespace AIBase.Game
 
         public AIPlayerField(ClientField field)
         {
-            Hand = new List<AICard>();
+            Locations = new Dictionary<CardLoc, IList<AICard>>();
+            Locations[CardLoc.Hand] = new List<AICard>();
             if (field.Hand != null)
             {
                 foreach (ClientCard card in field.Hand)
                 {
-                    if (card == null) { Hand.Add(null); }
-                    else { Hand.Add(AICard.FromClientCard(card, field)); }
+                    if (card == null) { Locations[CardLoc.Hand].Add(null); }
+                    else { Locations[CardLoc.Hand].Add(AICard.FromClientCard(card, field)); }
                 }
             }
 
-            MonsterZones = new List<AICard>();
+            Locations[CardLoc.MonsterZone] = new List<AICard>();
             if (field.MonsterZone != null)
             {
                 foreach (ClientCard card in field.MonsterZone)
                 {
-                    if (card == null) { MonsterZones.Add(null); continue; }
+                    if (card == null) { Locations[CardLoc.MonsterZone].Add(null); continue; }
                     AICard monster = AICard.FromClientCard(card, field);
-                    MonsterZones.Add(monster);
+                    Locations[CardLoc.MonsterZone].Add(monster);
 
                     if (field.BattlingMonster == card)
                     {
@@ -50,53 +46,59 @@ namespace AIBase.Game
                 }
             }
 
-            SpellZones = new List<AICard>();
+            Locations[CardLoc.SpellZone] = new List<AICard>();
             if (field.SpellZone != null)
             {
                 foreach (ClientCard card in field.SpellZone)
                 {
-                    if (card == null) { SpellZones.Add(null); }
-                    else { SpellZones.Add(AICard.FromClientCard(card, field)); }
+                    if (card == null) { Locations[CardLoc.SpellZone].Add(null); }
+                    else { Locations[CardLoc.SpellZone].Add(AICard.FromClientCard(card, field)); }
                 }
             }
 
-            Graveyard = new List<AICard>();
+            Locations[CardLoc.Graveyard] = new List<AICard>();
             if (field.Graveyard != null)
             {
                 foreach (ClientCard card in field.Graveyard)
                 {
-                    if (card == null) { Graveyard.Add(null); }
-                    else { Graveyard.Add(AICard.FromClientCard(card, field)); }
+                    if (card == null) { Locations[CardLoc.Graveyard].Add(null); }
+                    else { Locations[CardLoc.Graveyard].Add(AICard.FromClientCard(card, field)); }
                 }
             }
 
-            Banished = new List<AICard>();
+            Locations[CardLoc.Banished] = new List<AICard>();
             if (field.Banished != null)
             {
                 foreach (ClientCard card in field.Banished)
                 {
-                    if (card == null) { Banished.Add(null); }
-                    else { Banished.Add(AICard.FromClientCard(card, field)); }
+                    if (card == null) { Locations[CardLoc.Banished].Add(null); }
+                    else { Locations[CardLoc.Banished].Add(AICard.FromClientCard(card, field)); }
                 }
             }
 
-            Deck = new List<AICard>();
+            Locations[CardLoc.Deck] = new List<AICard>();
             if (field.Deck != null)
             {
                 foreach (ClientCard card in field.Deck)
                 {
-                    if (card == null) { Deck.Add(null); }
-                    else { Deck.Add(AICard.FromClientCard(card, field)); }
+                    if (card == null) { Locations[CardLoc.Deck].Add(null); }
+                    else { Locations[CardLoc.Deck].Add(AICard.FromClientCard(card, field)); }
                 }
             }
 
-            ExtraDeck = new List<AICard>();
+            Locations[CardLoc.ExtraDeck] = new List<AICard>();
             if (field.ExtraDeck != null)
             {
                 foreach (ClientCard card in field.ExtraDeck)
                 {
-                    if (card == null) { ExtraDeck.Add(null); }
-                    else { ExtraDeck.Add(AICard.FromClientCard(card, field)); }
+                    if (card == null) 
+                    {
+                        Locations[CardLoc.ExtraDeck].Add(null);
+                    }
+                    else
+                    {
+                        Locations[CardLoc.ExtraDeck].Add(AICard.FromClientCard(card, field));
+                    }
                 }
             }
 
@@ -105,53 +107,54 @@ namespace AIBase.Game
 
         public AIPlayerField(AIPlayerField copy)
         {
-            Hand = new List<AICard>();
-            foreach(AICard card in copy.Hand)
+            Locations = new Dictionary<CardLoc, IList<AICard>>();
+            Locations[CardLoc.Hand] = new List<AICard>();
+            foreach(AICard card in copy.Locations[CardLoc.Hand])
             {
-                if (card == null) { Hand.Add(null); }
-                else { Hand.Add(new AICard(card)); }
+                if (card == null) { Locations[CardLoc.Hand].Add(null); }
+                else { Locations[CardLoc.Hand].Add(new AICard(card)); }
             }
 
-            MonsterZones = new List<AICard>();
-            foreach (AICard card in copy.MonsterZones)
+            Locations[CardLoc.MonsterZone] = new List<AICard>();
+            foreach (AICard card in copy.Locations[CardLoc.MonsterZone])
             {
-                if (card == null) { MonsterZones.Add(null); }
-                else { MonsterZones.Add(new AICard(card)); }
+                if (card == null) { Locations[CardLoc.MonsterZone].Add(null); }
+                else { Locations[CardLoc.MonsterZone].Add(new AICard(card)); }
             }
 
-            SpellZones = new List<AICard>();
-            foreach (AICard card in copy.SpellZones)
+            Locations[CardLoc.SpellZone] = new List<AICard>();
+            foreach (AICard card in copy.Locations[CardLoc.SpellZone])
             {
-                if (card == null) { SpellZones.Add(null); }
-                else { SpellZones.Add(new AICard(card)); }
+                if (card == null) { Locations[CardLoc.SpellZone].Add(null); }
+                else { Locations[CardLoc.SpellZone].Add(new AICard(card)); }
             }
 
-            Graveyard = new List<AICard>();
-            foreach (AICard card in copy.Graveyard)
+            Locations[CardLoc.Graveyard] = new List<AICard>();
+            foreach (AICard card in copy.Locations[CardLoc.Graveyard])
             {
-                if (card == null) { Graveyard.Add(null); }
-                else { Graveyard.Add(new AICard(card)); }
+                if (card == null) { Locations[CardLoc.Graveyard].Add(null); }
+                else { Locations[CardLoc.Graveyard].Add(new AICard(card)); }
             }
 
-            Banished = new List<AICard>();
-            foreach (AICard card in copy.Banished)
+            Locations[CardLoc.Banished] = new List<AICard>();
+            foreach (AICard card in copy.Locations[CardLoc.Banished])
             {
-                if (card == null) { Banished.Add(null); }
-                else { Banished.Add(new AICard(card)); }
+                if (card == null) { Locations[CardLoc.Banished].Add(null); }
+                else { Locations[CardLoc.Banished].Add(new AICard(card)); }
             }
 
-            Deck = new List<AICard>();
-            foreach (AICard card in copy.Deck)
+            Locations[CardLoc.Deck] = new List<AICard>();
+            foreach (AICard card in copy.Locations[CardLoc.Deck])
             {
-                if (card == null) { Deck.Add(null); }
-                else { Deck.Add(new AICard(card)); }
+                if (card == null) { Locations[CardLoc.Deck].Add(null); }
+                else { Locations[CardLoc.Deck].Add(new AICard(card)); }
             }
 
-            ExtraDeck = new List<AICard>();
-            foreach (AICard card in copy.ExtraDeck)
+            Locations[CardLoc.ExtraDeck] = new List<AICard>();
+            foreach (AICard card in copy.Locations[CardLoc.ExtraDeck])
             {
-                if (card == null) { ExtraDeck.Add(null); }
-                else { ExtraDeck.Add(new AICard(card)); }
+                if (card == null) { Locations[CardLoc.ExtraDeck].Add(null); }
+                else { Locations[CardLoc.ExtraDeck].Add(new AICard(card)); }
             }
 
             FightingCard = copy.FightingCard;
@@ -162,12 +165,33 @@ namespace AIBase.Game
         public int FreeMonsterZones()
         {
             int count = 0;
-            foreach(AICard card in MonsterZones)
+            foreach(AICard card in Locations[CardLoc.MonsterZone])
             {
                 if(card == null) { count++; }
             }
 
             return count;
+        }
+
+        public void MoveCard(AICard target, CardLoc from, CardLoc to, int pos=-1)
+        {
+            foreach(AICard c in Locations[from])
+            {
+                if( c != null && c.source == target.source )
+                {
+                    Locations[from].Remove(c);
+                    break;
+                }
+            }
+
+            if (pos != -1)
+            {
+                Locations[to][pos] = target;
+            }
+            else
+            {
+                Locations[to].Add(target);
+            }
         }
     }
 }

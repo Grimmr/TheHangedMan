@@ -14,8 +14,7 @@ namespace AIBase.Game
     using Battle = Tuple<Player, AICard, AICard>;
     public class AIDuel
     {
-        public AIPlayerField Bot;
-        public AIPlayerField Enemy; 
+        public Dictionary<Player, AIPlayerField> Fields;
 
         public int TurnCount;
         public Player TurnPlayer;
@@ -31,8 +30,9 @@ namespace AIBase.Game
 
         public AIDuel(AIDuel copy)
         {
-            Bot = new AIPlayerField(copy.Bot);
-            Enemy = new AIPlayerField(copy.Enemy);
+            Fields = new Dictionary<Player, AIPlayerField>();
+            Fields[Player.Bot] = new AIPlayerField(copy.Fields[Player.Bot]);
+            Fields[Player.Enemy] = new AIPlayerField(copy.Fields[Player.Enemy]);
             TurnCount = copy.TurnCount;
             TurnPlayer = copy.TurnPlayer;
             Phase = copy.Phase;
@@ -48,8 +48,9 @@ namespace AIBase.Game
 
         public AIDuel(Duel duel)
         {
-            Bot = new AIPlayerField(duel.Fields[0]); //might need swapping vvvvv
-            Enemy = new AIPlayerField(duel.Fields[1]); //might need swapping ^^^
+            Fields = new Dictionary<Player, AIPlayerField>();
+            Fields[Player.Bot] = new AIPlayerField(duel.Fields[0]); //might need swapping vvvvv
+            Fields[Player.Enemy] = new AIPlayerField(duel.Fields[1]); //might need swapping ^^^
             TurnCount = duel.Turn;
             TurnPlayer = duel.Player == 0 ? Player.Bot : Player.Enemy; //might need swaping
             Phase = duel.Phase;

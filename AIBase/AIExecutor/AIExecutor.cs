@@ -51,6 +51,7 @@ namespace AIBase.AIExecutor
             {
                 if(((GoToPhase)state.GetNextAction()).Phase == p)
                 {
+                    state.PC++;
                     return true;
                 }
             }
@@ -73,10 +74,32 @@ namespace AIBase.AIExecutor
             if(next is SelectZone)
             {
                 state.PC++;
-                Console.WriteLine("I'm placing a monster");
                 return (int)Math.Pow(2, ((SelectZone)next).Zone);
             }
             return base.OnSelectPlace(cardId, player, location, available);
+        }
+
+        public override ClientCard OnSelectAttacker(IList<ClientCard> attackers, IList<ClientCard> defenders)
+        {
+            if(state.GetNextAction() is DeclareAttack)
+            {
+                var ret = ((DeclareAttack)state.GetNextAction()).Attacker.source;
+                state.PC++;
+                return ret;
+            }
+            return null;
+        }
+
+        public override BattlePhaseAction OnSelectAttackTarget(ClientCard attacker, IList<ClientCard> defenders)
+        {
+            if (state.GetNextAction() is SelectAttackTarget)
+            {
+                var def = ((SelectAttackTarget)state.GetNextAction()).target.source;
+                var atk = ((SelectAttackTarget)state.GetNextAction()).attacker.source;
+                state.PC++;
+                return AI.Attack(atk, def);
+            }
+            return null;
         }
 
         public virtual AIGameState SelectBestState(IList<AIGameState> options)
@@ -113,7 +136,7 @@ namespace AIBase.AIExecutor
             var lhsCount = 0;
             var rhsScore = 0;
             var rhsCount = 0;
-            foreach (AICard card in lhs.Duel.Bot.MonsterZones)
+            foreach (AICard card in lhs.Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone])
             {
                 if (card != null)
                 {
@@ -121,7 +144,7 @@ namespace AIBase.AIExecutor
                     lhsCount++;
                 }
             }
-            foreach (AICard card in rhs.Duel.Bot.MonsterZones)
+            foreach (AICard card in rhs.Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone])
             {
                 if (card != null)
                 {
@@ -129,14 +152,19 @@ namespace AIBase.AIExecutor
                     rhsCount++;
                 }
             }
-           
-            if (rhsCount > lhsCount) { return true; }
-            if (rhsCount < lhsCount) { return false; }
-            if (rhsScore < lhsScore) { return true; }
-            if (rhsScore > lhsScore) { return false; }
-            if (rhs.Actions.Count() < lhs.Actions.Count()) { return true; }
 
-            return false;
+            Console.WriteLine("lhs ({0} {1} {2} {3}) - rhs ({4} {5} {6} {7})", lhs.Duel.Fields[Player.Enemy].LP, lhsCount, lhsScore, lhs.Actions.Count(), rhs.Duel.Fields[Player.Enemy].LP, rhsCount, rhsScore, rhs.Actions.Count());
+            bool ret = false;
+            if (rhs.Duel.Fields[Player.Enemy].LP < lhs.Duel.Fields[Player.Enemy].LP) { ret = true; }
+            else if (rhs.Duel.Fields[Player.Enemy].LP > lhs.Duel.Fields[Player.Enemy].LP) { ret = false; }
+            else if (rhs.Duel.Fields[Player.Bot].LP <= 0) { ret = false; }
+            else if (rhsCount > lhsCount) { ret = true; }
+            else if (rhsCount < lhsCount) { ret = false; }
+            else if (rhsScore < lhsScore) { ret = true; }
+            else if (rhsScore > lhsScore) { ret = false; }
+            else if (rhs.Actions.Count() < lhs.Actions.Count()) { ret = true; }
+
+            return ret;
         }
 
         private AIGameState ForceStateRefresh()

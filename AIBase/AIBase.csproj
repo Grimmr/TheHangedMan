@@ -57,8 +57,10 @@
     <Compile Include="Enums\Player.cs" />
     <Compile Include="Enums\SummonMethod.cs" />
     <Compile Include="Game\Action.cs" />
+    <Compile Include="Game\Actions\DeclareAttack.cs" />
     <Compile Include="Game\Actions\GoToPhase.cs" />
     <Compile Include="Game\Actions\NormalSummon.cs" />
+    <Compile Include="Game\Actions\SelectAttackTarget.cs" />
     <Compile Include="Game\Actions\SelectZone.cs" />
     <Compile Include="Game\AIExecutor.cs" />
     <Compile Include="Game\AICard.cs" />

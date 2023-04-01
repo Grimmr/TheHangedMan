@@ -1,4 +1,5 @@
 ﻿using AIBase.Enums;
+using AIBase.Game.Actions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -138,9 +139,30 @@ namespace AIBase.Game
 
         }
 
-        public virtual bool NormalSummonCondition()
+        public virtual bool NormalSummonCondition(AIGameState state)
         {
             return Type.isMonsterType() && Level <= 4;
+        }
+
+        public virtual bool AttackCondition(AIGameState state)
+        {
+            for (int i = state.Actions.Count() - 1; i >= 0; i--)
+            {
+                if (state.Actions[i] is DeclareAttack)
+                {
+                    if (((DeclareAttack)state.Actions[i]).Attacker.source == this.source)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        public virtual bool AttackTargetCondition(AIGameState state)
+        {
+            return true;
         }
 
         public override string ToString()
