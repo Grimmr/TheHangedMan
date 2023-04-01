@@ -175,11 +175,19 @@ namespace AIBase.Game
 
         public void MoveCard(AICard target, CardLoc from, CardLoc to, int pos=-1)
         {
-            foreach(AICard c in Locations[from])
+            for (int i = 0; i < Locations[from].Count(); i++)
             {
-                if( c != null && c.source == target.source )
+                var c = Locations[from][i];
+                if ( c != null && c.source == target.source )
                 {
-                    Locations[from].Remove(c);
+                    if (from == CardLoc.SpellZone || from == CardLoc.MonsterZone)
+                    {
+                        Locations[from][i] = null;
+                    }
+                    else
+                    {
+                        Locations[from].Remove(c);
+                    }
                     break;
                 }
             }

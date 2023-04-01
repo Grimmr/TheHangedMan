@@ -18,7 +18,7 @@ namespace AIBase.Game.Actions
 
         public override string ToString()
         {
-            return "SELECT_ATTACK_TARGET " + attacker.ToString() + " " + target.ToString();
+            return "SELECT_ATTACK_TARGET " + attacker.ToString() + " " + (target != null? target.ToString() : "direct");
         }
     }
 }

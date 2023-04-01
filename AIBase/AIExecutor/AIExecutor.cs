@@ -94,7 +94,7 @@ namespace AIBase.AIExecutor
         {
             if (state.GetNextAction() is SelectAttackTarget)
             {
-                var def = ((SelectAttackTarget)state.GetNextAction()).target.source;
+                var def = ((SelectAttackTarget)state.GetNextAction()).target != null? ((SelectAttackTarget)state.GetNextAction()).target.source : null;
                 var atk = ((SelectAttackTarget)state.GetNextAction()).attacker.source;
                 state.PC++;
                 return AI.Attack(atk, def);

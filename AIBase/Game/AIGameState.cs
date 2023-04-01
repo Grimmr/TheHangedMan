@@ -179,7 +179,7 @@ namespace AIBase.Game
 
             if(defender == null)
             {
-                return ComputeDamage(attacker.Controller.Not(), attacker.Atk);
+                return initial.ComputeDamage(attacker.Controller.Not(), attacker.Atk);
             }
             else
             {
