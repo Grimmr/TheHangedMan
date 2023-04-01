@@ -47,7 +47,7 @@ namespace AIBase.Game
                 if (Duel.TurnPlayer == Player.Bot && CanNormal() && (Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2) && Duel.CurrentChain.Count() == 0)
                 {
                     protoOptions = protoOptions.Concat(GenerateNormalSummonsFromCard(card)).ToList();  
-                }  
+                }
             }
 
             //consider attacks
@@ -110,8 +110,7 @@ namespace AIBase.Game
         {
             IList<AIGameState> options = new List<AIGameState>();
              
-            //non-tribute case
-            if(card.Level <= 4 && card.NormalSummonCondition(this) && Duel.Fields[Player.Bot].FreeMonsterZones() > 0)
+            if(card.NormalSummonCondition(this) && Duel.Fields[Player.Bot].FreeMonsterZones() > 0)
             {
                 //Face up atk summon
                 for (int zone = 0; zone < 5; zone++)

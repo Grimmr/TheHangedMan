@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using WindBot.Game;
+using YGOSharp.OCGWrapper;
 using YGOSharp.OCGWrapper.Enums;
 
 namespace AIBase.Game
@@ -142,6 +143,42 @@ namespace AIBase.Game
         public virtual bool NormalSummonCondition(AIGameState state)
         {
             return Type.isMonsterType() && Level <= 4;
+        }
+
+        public virtual bool TributeSummonCondition(AIGameState state)
+        {
+            return Type == CardBasicType.Monster && Level >= 5;
+        }
+
+        public virtual IList<List<AICard>> GetTributeOptions(AIGameState state)
+        {
+            var ret = new List<List<AICard>>();
+            if (Level <= 4)
+            {
+                return ret;
+            }
+            if (Level >= 5 && Level <= 6)
+            {
+                foreach(AICard card in state.Duel.Fields[Controller].Locations[CardLoc.MonsterZone])
+                {
+                    ret.Add(new List<AICard> { card });
+                }
+            }
+            else //Level >= 7
+            {
+                foreach (AICard cardA in state.Duel.Fields[Controller].Locations[CardLoc.MonsterZone])
+                {
+                    foreach (AICard cardB in state.Duel.Fields[Controller].Locations[CardLoc.MonsterZone])
+                    {
+                        if(cardA != cardB)
+                        {
+                            ret.Add(new List<AICard> { cardA, cardB });
+                        }
+                    }
+                }
+            }
+
+            return ret;
         }
 
         public virtual bool AttackCondition(AIGameState state)
