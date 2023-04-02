@@ -1,5 +1,6 @@
 ﻿using AIBase.Enums;
 using AIBase.Game.Actions;
+using AIBase.Game.Buffs;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -21,6 +22,12 @@ namespace AIBase.Game
         public Func<AIGameState[], AIGameState> PostConditionEffect; //activation in chain
         public IList<EffectTag> tags;
         public AICard parent;
+    }
+
+    public class Influence
+    {
+        public Func<bool, AIGameState, AICard> CleanUpCondition;
+        public IList<Buff> Buffs;
     }
 
     public class AICard
@@ -55,6 +62,7 @@ namespace AIBase.Game
         public SummonMethod SummonSource;
 
         public IList<CardEffect> Effects;
+        public IList<Influence> Buffs;
         
         public AICard(AICard copy)
         {
@@ -200,6 +208,11 @@ namespace AIBase.Game
         public virtual bool AttackTargetCondition(AIGameState state)
         {
             return true;
+        }
+
+        public virtual bool IsEffectMonster(AIGameState state)
+        {
+            return Type.isMonsterType() && Effects.Count > 0;
         }
 
         public override string ToString()

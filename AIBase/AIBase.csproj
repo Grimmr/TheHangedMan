@@ -62,11 +62,11 @@
     <Compile Include="Game\Actions\NormalSummon.cs" />
     <Compile Include="Game\Actions\SelectAttackTarget.cs" />
     <Compile Include="Game\Actions\SelectZone.cs" />
-    <Compile Include="Game\AIExecutor.cs" />
     <Compile Include="Game\AICard.cs" />
     <Compile Include="Game\AIDuel.cs" />
     <Compile Include="Game\AIGameState.cs" />
     <Compile Include="Game\AIPlayerField.cs" />
+    <Compile Include="Game\Buffs\Buff.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Cards\" />
