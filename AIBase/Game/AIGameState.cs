@@ -36,42 +36,61 @@ namespace AIBase.Game
             HiddenInfo = -1;
         }
 
+        public IList<AIGameState> GenerateOptionsFromHidden(Duel duel)
+        {
+            Duel = new AIDuel(duel);
+            PC = HiddenInfo;
+            HiddenInfo = -1;
+            for(int i = Actions.Count()-1; i >= PC; i--)
+            {
+                Actions.RemoveAt(i);
+            }
+
+            return GenerateOptions();
+        }
+
         public IList<AIGameState> GenerateOptions()
         {
             IList<AIGameState> protoOptions = new List<AIGameState>();
-    
-            //consider cards in hand
-            foreach(AICard card in Duel.Fields[Player.Bot].Locations[CardLoc.Hand])
-            {
-                //normal summon
-                if (Duel.TurnPlayer == Player.Bot && CanNormal() && (Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2) && Duel.CurrentChain.Count() == 0)
-                {
-                    protoOptions = protoOptions.Concat(GenerateNormalSummonsFromCard(card)).ToList();  
-                }
-            }
 
-            //consider attacks
-            if(Duel.Phase == DuelPhase.BattleStep)
+            //our turn
+            if (Duel.TurnPlayer == Player.Bot)
             {
-                protoOptions = protoOptions.Concat(GenerateAttacks()).ToList();
-            }
-            
-            
-
-            //consider PhaseChange options
-            if(Duel.TurnPlayer == Player.Bot && Duel.CurrentChain.Count() == 0)
-            {
-                foreach(DuelPhase p in FollowPhases(Duel.Phase))
+                foreach (AICard card in Duel.Fields[Player.Bot].Locations[CardLoc.Hand])
                 {
-                    AIGameState outcome = new AIGameState(this);
-                    //only add an action if it makes sense
-                    if (p == DuelPhase.BattleStart || p == DuelPhase.End || p == DuelPhase.Main2)
+                    //normal summon
+                    if (CanNormal() && (Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2) && Duel.CurrentChain.Count() == 0)
                     {
-                        outcome.Actions.Add(new GoToPhase(p));
+                        protoOptions = protoOptions.Concat(GenerateNormalSummonsFromCard(card)).ToList();
                     }
-                    outcome.Duel.Phase = p;
-                    protoOptions.Add(outcome);
+                    //normal set
+                    if (CanNormal() && (Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2) && Duel.CurrentChain.Count() == 0)
+                    {
+                        protoOptions = protoOptions.Concat(GenerateNormalSummonsFromCard(card)).ToList();
+                    }
                 }
+
+                //consider attacks
+                if (Duel.Phase == DuelPhase.BattleStep && Duel.CurrentChain.Count() == 0)
+                {
+                    protoOptions = protoOptions.Concat(GenerateAttacks()).ToList();
+                }
+
+                //consider PhaseChange options
+                if (Duel.CurrentChain.Count() == 0)
+                {
+                    foreach (DuelPhase p in FollowPhases(Duel.Phase))
+                    {
+                        AIGameState outcome = new AIGameState(this);
+                        //only add an action if it makes sense
+                        if (p == DuelPhase.BattleStart || p == DuelPhase.End || p == DuelPhase.Main2)
+                        {
+                            outcome.Actions.Add(new GoToPhase(p));
+                        }
+                        outcome.Duel.Phase = p;
+                        protoOptions.Add(outcome);
+                    }
+                } 
             }
 
             //if there are any follow states return them not these
@@ -186,8 +205,8 @@ namespace AIBase.Game
                 if(!defender.FaceUp)
                 {
                     defender.FaceUp = true;
-                    initial.setHiddeInfo(Actions.Count());
-                    return ComputeDestruction(defender);
+                    initial.setHiddeInfo(initial.Actions.Count());
+                    return initial.ComputeDestruction(defender);
                 }
 
                 
@@ -205,7 +224,7 @@ namespace AIBase.Game
                     } 
                     else
                     {
-                        var damageOutcomes = ComputeDamage(attacker.Controller, defender.Atk - attacker.Atk);
+                        var damageOutcomes = initial.ComputeDamage(attacker.Controller, defender.Atk - attacker.Atk);
                         var destructionOutcomes = new List<AIGameState>();
                         foreach (AIGameState state in damageOutcomes)
                         {
@@ -218,11 +237,11 @@ namespace AIBase.Game
                 {
                     if(defender.Def < attacker.Atk)
                     {
-                        return ComputeDestruction(defender);
+                        return initial.ComputeDestruction(defender);
                     }
                     else
                     {
-                        return ComputeDamage(attacker.Controller, defender.Def - attacker.Atk);
+                        return initial.ComputeDamage(attacker.Controller, defender.Def - attacker.Atk);
                     }
                 }
             }
@@ -237,7 +256,7 @@ namespace AIBase.Game
         {
             var initial = new AIGameState(this);
             initial.Duel.Fields[target.Controller].MoveCard(target, target.Location, CardLoc.Graveyard);
-            target.Location = CardLoc.Graveyard;
+            initial.getCard(target).Location = CardLoc.Graveyard;
             return new List<AIGameState> { initial };
         }
 

@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using WindBot.Game;
 using WindBot.Game.AI;
 using YGOSharp.OCGWrapper.Enums;
+using Action = AIBase.Game.Action;
 
 namespace AIBase.AIExecutor
 {
@@ -33,11 +34,11 @@ namespace AIBase.AIExecutor
         public bool SummonCheck()
         {
             if(state == null) { return false; }
-            if (state.GetNextAction() is NormalSummon)
+            if (GetNextAction() is NormalSummon)
             {
-                if (((NormalSummon)state.GetNextAction()).Monster.source == Card)
+                if (((NormalSummon)GetNextAction()).Monster.source == Card)
                 {
-                    state.PC++;
+                    StepPC();
                     return true;
                 }
             }
@@ -47,11 +48,11 @@ namespace AIBase.AIExecutor
         public bool GotoPhaseCheck(DuelPhase p)
         {
             if (state == null) { return false; }
-            if (state.GetNextAction() is GoToPhase)
+            if (GetNextAction() is GoToPhase)
             {
-                if(((GoToPhase)state.GetNextAction()).Phase == p)
+                if(((GoToPhase)GetNextAction()).Phase == p)
                 {
-                    state.PC++;
+                    StepPC();
                     return true;
                 }
             }
@@ -70,10 +71,10 @@ namespace AIBase.AIExecutor
 
         public override int OnSelectPlace(long cardId, int player, CardLocation location, int available)
         {
-            var next = state.GetNextAction();
+            var next = GetNextAction();
             if(next is SelectZone)
             {
-                state.PC++;
+                StepPC();
                 return (int)Math.Pow(2, ((SelectZone)next).Zone);
             }
             return base.OnSelectPlace(cardId, player, location, available);
@@ -81,10 +82,10 @@ namespace AIBase.AIExecutor
 
         public override ClientCard OnSelectAttacker(IList<ClientCard> attackers, IList<ClientCard> defenders)
         {
-            if(state.GetNextAction() is DeclareAttack)
+            if(GetNextAction() is DeclareAttack)
             {
-                var ret = ((DeclareAttack)state.GetNextAction()).Attacker.source;
-                state.PC++;
+                var ret = ((DeclareAttack)GetNextAction()).Attacker.source;
+                StepPC();
                 return ret;
             }
             return null;
@@ -92,11 +93,11 @@ namespace AIBase.AIExecutor
 
         public override BattlePhaseAction OnSelectAttackTarget(ClientCard attacker, IList<ClientCard> defenders)
         {
-            if (state.GetNextAction() is SelectAttackTarget)
+            if (GetNextAction() is SelectAttackTarget)
             {
-                var def = ((SelectAttackTarget)state.GetNextAction()).target != null? ((SelectAttackTarget)state.GetNextAction()).target.source : null;
-                var atk = ((SelectAttackTarget)state.GetNextAction()).attacker.source;
-                state.PC++;
+                var def = ((SelectAttackTarget)GetNextAction()).target != null? ((SelectAttackTarget)GetNextAction()).target.source : null;
+                var atk = ((SelectAttackTarget)GetNextAction()).attacker.source;
+                StepPC();
                 return AI.Attack(atk, def);
             }
             return null;
@@ -162,7 +163,7 @@ namespace AIBase.AIExecutor
             else if (rhsCount < lhsCount) { ret = false; }
             else if (rhsScore < lhsScore) { ret = true; }
             else if (rhsScore > lhsScore) { ret = false; }
-            else if (rhs.Actions.Count() < lhs.Actions.Count()) { ret = true; }
+            else if (rhs.Actions.Count() > lhs.Actions.Count()) { ret = true; }
 
             return ret;
         }
@@ -172,6 +173,21 @@ namespace AIBase.AIExecutor
             state = new AIGameState(Duel);
             state = SelectBestState(state.GenerateOptions());
             return state;
+        }
+
+        private void StepPC()
+        {
+            state.PC++;
+        }
+
+        private Action GetNextAction()
+        {
+            if (state.PC == state.HiddenInfo)
+            {
+                state = SelectBestState(state.GenerateOptionsFromHidden(Duel));
+            }
+
+            return state.GetNextAction();
         }
     }
 }
