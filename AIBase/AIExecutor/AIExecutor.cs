@@ -23,6 +23,7 @@ namespace AIBase.AIExecutor
         {
             Executors.Clear();
             AddExecutor(ExecutorType.Summon, SummonCheck);
+            AddExecutor(ExecutorType.MonsterSet, SetCheck);
             AddExecutor(ExecutorType.GoToEndPhase, delegate () { return GotoPhaseCheck(DuelPhase.End); }) ;
             AddExecutor(ExecutorType.GoToBattlePhase, delegate () { return GotoPhaseCheck(DuelPhase.BattleStart); });
             AddExecutor(ExecutorType.GoToBattlePhase, delegate () { return GotoPhaseCheck(DuelPhase.BattleStart); });
@@ -37,6 +38,20 @@ namespace AIBase.AIExecutor
             if (GetNextAction() is NormalSummon)
             {
                 if (((NormalSummon)GetNextAction()).Monster.source == Card)
+                {
+                    StepPC();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool SetCheck() 
+        {
+            if (state == null) { return false; }
+            if (GetNextAction() is NormalSet)
+            {
+                if (((NormalSet)GetNextAction()).Monster.source == Card)
                 {
                     StepPC();
                     return true;
@@ -154,7 +169,7 @@ namespace AIBase.AIExecutor
                 }
             }
 
-            Console.WriteLine("lhs ({0} {1} {2} {3}) - rhs ({4} {5} {6} {7})", lhs.Duel.Fields[Player.Enemy].LP, lhsCount, lhsScore, lhs.Actions.Count(), rhs.Duel.Fields[Player.Enemy].LP, rhsCount, rhsScore, rhs.Actions.Count());
+            //Console.WriteLine("lhs ({0} {1} {2} {3}) - rhs ({4} {5} {6} {7})", lhs.Duel.Fields[Player.Enemy].LP, lhsCount, lhsScore, lhs.Actions.Count(), rhs.Duel.Fields[Player.Enemy].LP, rhsCount, rhsScore, rhs.Actions.Count());
             bool ret = false;
             if (rhs.Duel.Fields[Player.Enemy].LP < lhs.Duel.Fields[Player.Enemy].LP) { ret = true; }
             else if (rhs.Duel.Fields[Player.Enemy].LP > lhs.Duel.Fields[Player.Enemy].LP) { ret = false; }
@@ -163,7 +178,7 @@ namespace AIBase.AIExecutor
             else if (rhsCount < lhsCount) { ret = false; }
             else if (rhsScore < lhsScore) { ret = true; }
             else if (rhsScore > lhsScore) { ret = false; }
-            else if (rhs.Actions.Count() > lhs.Actions.Count()) { ret = true; }
+            else if (rhs.Actions.Count() < lhs.Actions.Count()) { ret = true; }
 
             return ret;
         }

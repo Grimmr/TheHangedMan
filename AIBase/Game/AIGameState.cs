@@ -66,7 +66,7 @@ namespace AIBase.Game
                     //normal set
                     if (CanNormal() && (Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2) && Duel.CurrentChain.Count() == 0)
                     {
-                        protoOptions = protoOptions.Concat(GenerateNormalSummonsFromCard(card)).ToList();
+                        protoOptions = protoOptions.Concat(GenerateNormalSetFromCard(card)).ToList();
                     }
                 }
 
@@ -131,12 +131,29 @@ namespace AIBase.Game
              
             if(card.NormalSummonCondition(this) && Duel.Fields[Player.Bot].FreeMonsterZones() > 0)
             {
-                //Face up atk summon
                 for (int zone = 0; zone < 5; zone++)
                 {
                     if (Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone][zone] == null)
                     {
                         options = options.Concat(ComputeNormalSummon(card, zone)).ToList();
+                    }
+                }
+            }
+
+            return options;
+        }
+
+        public IList<AIGameState> GenerateNormalSetFromCard(AICard card)
+        {
+            IList<AIGameState> options = new List<AIGameState>();
+
+            if (card.NormalSetCondition(this) && Duel.Fields[Player.Bot].FreeMonsterZones() > 0)
+            {
+                for (int zone = 0; zone < 5; zone++)
+                {
+                    if (Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone][zone] == null)
+                    {
+                        options = options.Concat(ComputeNormalSet(card, zone)).ToList();
                     }
                 }
             }
@@ -150,7 +167,7 @@ namespace AIBase.Game
 
             foreach(AICard attacker in Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone])
             {
-                if (attacker != null && attacker.AttackCondition(this))
+                if (attacker != null && attacker.AttackCondition(this) && attacker.FaceUp && attacker.Position == BattlePos.Atk)
                 {
                     //direct attack
                     if (Duel.Fields[Player.Enemy].FreeMonsterZones() == 7)
@@ -182,6 +199,19 @@ namespace AIBase.Game
             target.Location = CardLoc.MonsterZone;
             target.FaceUp = true;
             target.Position = BattlePos.Atk;
+
+            return new List<AIGameState> { initial };
+        }
+
+        public IList<AIGameState> ComputeNormalSet(AICard target, int zone)
+        {
+            var initial = new AIGameState(this);
+            initial.Actions.Add(new NormalSet(target));
+            initial.Actions.Add(new SelectZone(zone));
+            initial.Duel.Fields[Player.Bot].MoveCard(target, target.Location, CardLoc.MonsterZone, zone);
+            target.Location = CardLoc.MonsterZone;
+            target.FaceUp = false;
+            target.Position = BattlePos.Def;
 
             return new List<AIGameState> { initial };
         }
@@ -296,7 +326,7 @@ namespace AIBase.Game
         {
             for(int i = Actions.Count()-1; i >= 0; i--)
             {
-                if (Actions[i] is NormalSummon)
+                if (Actions[i] is NormalSummon || Actions[i] is NormalSet)
                 {
                     return false;
                 }

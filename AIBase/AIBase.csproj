@@ -59,6 +59,7 @@
     <Compile Include="Game\Action.cs" />
     <Compile Include="Game\Actions\DeclareAttack.cs" />
     <Compile Include="Game\Actions\GoToPhase.cs" />
+    <Compile Include="Game\Actions\NormalSet.cs" />
     <Compile Include="Game\Actions\NormalSummon.cs" />
     <Compile Include="Game\Actions\SelectAttackTarget.cs" />
     <Compile Include="Game\Actions\SelectZone.cs" />

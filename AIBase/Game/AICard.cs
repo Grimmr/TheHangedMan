@@ -153,6 +153,11 @@ namespace AIBase.Game
             return Type.isMonsterType() && Level <= 4;
         }
 
+        public virtual bool NormalSetCondition(AIGameState state)
+        {
+            return Type.isMonsterType() && Level <= 4;
+        }
+
         public virtual bool TributeSummonCondition(AIGameState state)
         {
             return Type == CardBasicType.Monster && Level >= 5;
