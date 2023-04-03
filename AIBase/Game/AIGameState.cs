@@ -56,6 +56,7 @@ namespace AIBase.Game
             //our turn
             if (Duel.TurnPlayer == Player.Bot)
             {
+                //consider cards in hand
                 foreach (AICard card in Duel.Fields[Player.Bot].Locations[CardLoc.Hand])
                 {
                     //normal summon
@@ -74,6 +75,19 @@ namespace AIBase.Game
                 if (Duel.Phase == DuelPhase.BattleStep && Duel.CurrentChain.Count() == 0)
                 {
                     protoOptions = protoOptions.Concat(GenerateAttacks()).ToList();
+                }
+
+                //consider monsters on field
+                foreach(AICard card in Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone])
+                {
+                    if (card != null)
+                    {
+                        //flip summons
+                        if ((Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2) && Duel.CurrentChain.Count() == 0)
+                        {
+                            protoOptions = protoOptions.Concat(GenerateFlipSummonFromCard(card)).ToList();
+                        } 
+                    }
                 }
 
                 //consider PhaseChange options
@@ -161,13 +175,25 @@ namespace AIBase.Game
             return options;
         }
 
+        public IList<AIGameState> GenerateFlipSummonFromCard(AICard card)
+        {
+            IList<AIGameState> options = new List<AIGameState>();
+
+            if (card.FlipSummonCondition(this))
+            {
+                options = options.Concat(ComputeFlipSummon(card)).ToList();
+            }
+
+            return options;
+        }
+
         public IList<AIGameState> GenerateAttacks()
         {
             IList<AIGameState> options = new List<AIGameState>();
 
             foreach(AICard attacker in Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone])
             {
-                if (attacker != null && attacker.AttackCondition(this) && attacker.FaceUp && attacker.Position == BattlePos.Atk)
+                if (attacker != null && attacker.AttackCondition(this))
                 {
                     //direct attack
                     if (Duel.Fields[Player.Enemy].FreeMonsterZones() == 7)
@@ -195,10 +221,10 @@ namespace AIBase.Game
             var initial = new AIGameState(this);
             initial.Actions.Add(new NormalSummon(target));
             initial.Actions.Add(new SelectZone(zone));
-            initial.Duel.Fields[Player.Bot].MoveCard(target, target.Location, CardLoc.MonsterZone, zone);
-            target.Location = CardLoc.MonsterZone;
-            target.FaceUp = true;
-            target.Position = BattlePos.Atk;
+            initial.Duel.Fields[Player.Bot].MoveCard(initial.getCard(target), target.Location, CardLoc.MonsterZone, zone);
+            initial.getCard(target).Location = CardLoc.MonsterZone;
+            initial.getCard(target).FaceUp = true;
+            initial.getCard(target).Position = BattlePos.Atk;
 
             return new List<AIGameState> { initial };
         }
@@ -208,10 +234,20 @@ namespace AIBase.Game
             var initial = new AIGameState(this);
             initial.Actions.Add(new NormalSet(target));
             initial.Actions.Add(new SelectZone(zone));
-            initial.Duel.Fields[Player.Bot].MoveCard(target, target.Location, CardLoc.MonsterZone, zone);
-            target.Location = CardLoc.MonsterZone;
-            target.FaceUp = false;
-            target.Position = BattlePos.Def;
+            initial.Duel.Fields[Player.Bot].MoveCard(initial.getCard(target), target.Location, CardLoc.MonsterZone, zone);
+            initial.getCard(target).Location = CardLoc.MonsterZone;
+            initial.getCard(target).FaceUp = false;
+            initial.getCard(target).Position = BattlePos.Def;
+
+            return new List<AIGameState> { initial };
+        }
+
+        public IList<AIGameState> ComputeFlipSummon(AICard target)
+        {
+            var initial = new AIGameState(this);
+            initial.Actions.Add(new FlipSummon(target));
+            initial.getCard(target).FaceUp = true;
+            initial.getCard(target).Position = BattlePos.Atk;
 
             return new List<AIGameState> { initial };
         }
@@ -285,7 +321,7 @@ namespace AIBase.Game
         public IList<AIGameState> ComputeSendToGrave(AICard target)
         {
             var initial = new AIGameState(this);
-            initial.Duel.Fields[target.Controller].MoveCard(target, target.Location, CardLoc.Graveyard);
+            initial.Duel.Fields[target.Controller].MoveCard(initial.getCard(target), target.Location, CardLoc.Graveyard);
             initial.getCard(target).Location = CardLoc.Graveyard;
             return new List<AIGameState> { initial };
         }

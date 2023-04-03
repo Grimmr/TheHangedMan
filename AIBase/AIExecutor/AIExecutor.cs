@@ -24,6 +24,7 @@ namespace AIBase.AIExecutor
             Executors.Clear();
             AddExecutor(ExecutorType.Summon, SummonCheck);
             AddExecutor(ExecutorType.MonsterSet, SetCheck);
+            AddExecutor(ExecutorType.Repos, ReposCheck);
             AddExecutor(ExecutorType.GoToEndPhase, delegate () { return GotoPhaseCheck(DuelPhase.End); }) ;
             AddExecutor(ExecutorType.GoToBattlePhase, delegate () { return GotoPhaseCheck(DuelPhase.BattleStart); });
             AddExecutor(ExecutorType.GoToBattlePhase, delegate () { return GotoPhaseCheck(DuelPhase.BattleStart); });
@@ -60,6 +61,19 @@ namespace AIBase.AIExecutor
             return false;
         }
 
+        public bool ReposCheck()
+        {
+            if (GetNextAction() is FlipSummon)
+            {
+                if (((FlipSummon)GetNextAction()).Monster.source == Card)
+                {
+                    StepPC();
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public bool GotoPhaseCheck(DuelPhase p)
         {
             if (state == null) { return false; }
@@ -73,6 +87,7 @@ namespace AIBase.AIExecutor
             }
             return false;
         }
+
 
         public override void OnNewPhase()
         {
@@ -170,17 +185,19 @@ namespace AIBase.AIExecutor
             }
 
             //Console.WriteLine("lhs ({0} {1} {2} {3}) - rhs ({4} {5} {6} {7})", lhs.Duel.Fields[Player.Enemy].LP, lhsCount, lhsScore, lhs.Actions.Count(), rhs.Duel.Fields[Player.Enemy].LP, rhsCount, rhsScore, rhs.Actions.Count());
-            bool ret = false;
-            if (rhs.Duel.Fields[Player.Enemy].LP < lhs.Duel.Fields[Player.Enemy].LP) { ret = true; }
-            else if (rhs.Duel.Fields[Player.Enemy].LP > lhs.Duel.Fields[Player.Enemy].LP) { ret = false; }
-            else if (rhs.Duel.Fields[Player.Bot].LP <= 0) { ret = false; }
-            else if (rhsCount > lhsCount) { ret = true; }
-            else if (rhsCount < lhsCount) { ret = false; }
-            else if (rhsScore < lhsScore) { ret = true; }
-            else if (rhsScore > lhsScore) { ret = false; }
-            else if (rhs.Actions.Count() < lhs.Actions.Count()) { ret = true; }
+            if (rhs.Duel.Fields[Player.Enemy].LP < lhs.Duel.Fields[Player.Enemy].LP) { return true; }
+            if (rhs.Duel.Fields[Player.Enemy].LP > lhs.Duel.Fields[Player.Enemy].LP) { return false; }
+            if (rhs.Duel.Fields[Player.Bot].LP <= 0) { return false; }
+            if (rhsCount > lhsCount) { return true; }
+            if (rhsCount < lhsCount) { return false; }
+            if (rhsScore < lhsScore) { return true; }
+            if (rhsScore > lhsScore) { return false; }
 
-            return ret;
+            foreach (AICard card in rhs.Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone]) { return true; }
+
+            if (rhs.Actions.Count() < lhs.Actions.Count()) { return true; }
+
+            return false;
         }
 
         private AIGameState ForceStateRefresh()

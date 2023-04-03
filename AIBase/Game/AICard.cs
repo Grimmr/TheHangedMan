@@ -158,6 +158,27 @@ namespace AIBase.Game
             return Type.isMonsterType() && Level <= 4;
         }
 
+        public virtual bool FlipSummonCondition(AIGameState state)
+        {
+            if (!Type.isMonsterType() || FaceUp)
+            {
+                return false;
+            }
+
+            for (int i = state.Actions.Count() - 1; i >= 0; i--)
+            {
+                if (state.Actions[i] is NormalSet)
+                {
+                    if (((NormalSet)state.Actions[i]).Monster.source == this.source)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
         public virtual bool TributeSummonCondition(AIGameState state)
         {
             return Type == CardBasicType.Monster && Level >= 5;
@@ -196,6 +217,8 @@ namespace AIBase.Game
 
         public virtual bool AttackCondition(AIGameState state)
         {
+            if (!FaceUp || Position == BattlePos.Def) { return false;  }
+            
             for (int i = state.Actions.Count() - 1; i >= 0; i--)
             {
                 if (state.Actions[i] is DeclareAttack)
