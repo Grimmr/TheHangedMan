@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AIExecutor\AIExecutor.cs" />
+    <Compile Include="Cards\PotOfExtravagance.cs" />
     <Compile Include="Enums\BattlePos.cs" />
     <Compile Include="Enums\CardLoc.cs" />
     <Compile Include="Enums\CardName.cs" />
@@ -57,6 +58,7 @@
     <Compile Include="Enums\Player.cs" />
     <Compile Include="Enums\SummonMethod.cs" />
     <Compile Include="Game\Action.cs" />
+    <Compile Include="Game\Actions\ActivateCard.cs" />
     <Compile Include="Game\Actions\ChangePos.cs" />
     <Compile Include="Game\Actions\DeclareAttack.cs" />
     <Compile Include="Game\Actions\FlipSummon.cs" />
@@ -64,6 +66,7 @@
     <Compile Include="Game\Actions\NormalSet.cs" />
     <Compile Include="Game\Actions\NormalSummon.cs" />
     <Compile Include="Game\Actions\SelectAttackTarget.cs" />
+    <Compile Include="Game\Actions\SelectOption.cs" />
     <Compile Include="Game\Actions\SelectZone.cs" />
     <Compile Include="Game\AICard.cs" />
     <Compile Include="Game\AIDuel.cs" />
@@ -71,7 +74,7 @@
     <Compile Include="Game\AIPlayerField.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Cards\" />
+    <Content Include="Cards\CardLimitations.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

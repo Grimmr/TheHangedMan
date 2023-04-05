@@ -17,6 +17,8 @@ namespace AIBase.Game
 
         public int LP;
 
+        public int DrawCount; //the number of cards we've drawn on the way here
+
         public AIPlayerField(ClientField field)
         {
             Locations = new Dictionary<CardLoc, IList<AICard>>();
@@ -26,7 +28,7 @@ namespace AIBase.Game
                 foreach (ClientCard card in field.Hand)
                 {
                     if (card == null) { Locations[CardLoc.Hand].Add(null); }
-                    else { Locations[CardLoc.Hand].Add(AICard.FromClientCard(card, field)); }
+                    else { Locations[CardLoc.Hand].Add(AICard.FromClientCard(card)); }
                 }
             }
 
@@ -36,7 +38,7 @@ namespace AIBase.Game
                 foreach (ClientCard card in field.MonsterZone)
                 {
                     if (card == null) { Locations[CardLoc.MonsterZone].Add(null); continue; }
-                    AICard monster = AICard.FromClientCard(card, field);
+                    AICard monster = AICard.FromClientCard(card);
                     Locations[CardLoc.MonsterZone].Add(monster);
 
                     if (field.BattlingMonster == card)
@@ -52,7 +54,7 @@ namespace AIBase.Game
                 foreach (ClientCard card in field.SpellZone)
                 {
                     if (card == null) { Locations[CardLoc.SpellZone].Add(null); }
-                    else { Locations[CardLoc.SpellZone].Add(AICard.FromClientCard(card, field)); }
+                    else { Locations[CardLoc.SpellZone].Add(AICard.FromClientCard(card)); }
                 }
             }
 
@@ -62,7 +64,7 @@ namespace AIBase.Game
                 foreach (ClientCard card in field.Graveyard)
                 {
                     if (card == null) { Locations[CardLoc.Graveyard].Add(null); }
-                    else { Locations[CardLoc.Graveyard].Add(AICard.FromClientCard(card, field)); }
+                    else { Locations[CardLoc.Graveyard].Add(AICard.FromClientCard(card)); }
                 }
             }
 
@@ -72,7 +74,7 @@ namespace AIBase.Game
                 foreach (ClientCard card in field.Banished)
                 {
                     if (card == null) { Locations[CardLoc.Banished].Add(null); }
-                    else { Locations[CardLoc.Banished].Add(AICard.FromClientCard(card, field)); }
+                    else { Locations[CardLoc.Banished].Add(AICard.FromClientCard(card)); }
                 }
             }
 
@@ -82,7 +84,7 @@ namespace AIBase.Game
                 foreach (ClientCard card in field.Deck)
                 {
                     if (card == null) { Locations[CardLoc.Deck].Add(null); }
-                    else { Locations[CardLoc.Deck].Add(AICard.FromClientCard(card, field)); }
+                    else { Locations[CardLoc.Deck].Add(AICard.FromClientCard(card)); }
                 }
             }
 
@@ -97,12 +99,13 @@ namespace AIBase.Game
                     }
                     else
                     {
-                        Locations[CardLoc.ExtraDeck].Add(AICard.FromClientCard(card, field));
+                        Locations[CardLoc.ExtraDeck].Add(AICard.FromClientCard(card));
                     }
                 }
             }
 
             LP = field.LifePoints;
+            DrawCount = 0;
         }
 
         public AIPlayerField(AIPlayerField copy)
@@ -112,54 +115,55 @@ namespace AIBase.Game
             foreach(AICard card in copy.Locations[CardLoc.Hand])
             {
                 if (card == null) { Locations[CardLoc.Hand].Add(null); }
-                else { Locations[CardLoc.Hand].Add(new AICard(card)); }
+                else { Locations[CardLoc.Hand].Add(AICard.FromAICard(card)); }
             }
 
             Locations[CardLoc.MonsterZone] = new List<AICard>();
             foreach (AICard card in copy.Locations[CardLoc.MonsterZone])
             {
                 if (card == null) { Locations[CardLoc.MonsterZone].Add(null); }
-                else { Locations[CardLoc.MonsterZone].Add(new AICard(card)); }
+                else { Locations[CardLoc.MonsterZone].Add(AICard.FromAICard(card)); }
             }
 
             Locations[CardLoc.SpellZone] = new List<AICard>();
             foreach (AICard card in copy.Locations[CardLoc.SpellZone])
             {
                 if (card == null) { Locations[CardLoc.SpellZone].Add(null); }
-                else { Locations[CardLoc.SpellZone].Add(new AICard(card)); }
+                else { Locations[CardLoc.SpellZone].Add(AICard.FromAICard(card)); }
             }
 
             Locations[CardLoc.Graveyard] = new List<AICard>();
             foreach (AICard card in copy.Locations[CardLoc.Graveyard])
             {
                 if (card == null) { Locations[CardLoc.Graveyard].Add(null); }
-                else { Locations[CardLoc.Graveyard].Add(new AICard(card)); }
+                else { Locations[CardLoc.Graveyard].Add(AICard.FromAICard(card)); }
             }
 
             Locations[CardLoc.Banished] = new List<AICard>();
             foreach (AICard card in copy.Locations[CardLoc.Banished])
             {
                 if (card == null) { Locations[CardLoc.Banished].Add(null); }
-                else { Locations[CardLoc.Banished].Add(new AICard(card)); }
+                else { Locations[CardLoc.Banished].Add(AICard.FromAICard(card)); }
             }
 
             Locations[CardLoc.Deck] = new List<AICard>();
             foreach (AICard card in copy.Locations[CardLoc.Deck])
             {
                 if (card == null) { Locations[CardLoc.Deck].Add(null); }
-                else { Locations[CardLoc.Deck].Add(new AICard(card)); }
+                else { Locations[CardLoc.Deck].Add(AICard.FromAICard(card)); }
             }
 
             Locations[CardLoc.ExtraDeck] = new List<AICard>();
             foreach (AICard card in copy.Locations[CardLoc.ExtraDeck])
             {
                 if (card == null) { Locations[CardLoc.ExtraDeck].Add(null); }
-                else { Locations[CardLoc.ExtraDeck].Add(new AICard(card)); }
+                else { Locations[CardLoc.ExtraDeck].Add(AICard.FromAICard(card)); }
             }
 
             FightingCard = copy.FightingCard;
 
             LP = copy.LP;
+            DrawCount = copy.DrawCount;
         }
 
         public int FreeMonsterZones()

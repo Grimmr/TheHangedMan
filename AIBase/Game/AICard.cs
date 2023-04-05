@@ -1,4 +1,5 @@
-﻿using AIBase.Enums;
+﻿using AIBase.Cards;
+using AIBase.Enums;
 using AIBase.Game.Actions;
 using System;
 using System.Collections.Generic;
@@ -15,12 +16,13 @@ namespace AIBase.Game
 {
     public class CardEffect
     {
-        public EffectTrigger Trigger;
-        public Func<bool, AIGameState> Precondition;
-        public Func<AIGameState[], AIGameState> PostConditionCost; //pre chain
-        public Func<AIGameState[], AIGameState> PostConditionEffect; //activation in chain
-        public IList<EffectTag> tags;
-        public AICard parent;
+        public IList<EffectTrigger> Triggers;
+        public Func<AIGameState, bool> Precondition;
+        public Func<AIGameState, IList<AIGameState>> PostConditionCost; //pre chain
+        public Func<AIGameState, IList<AIGameState>> PostConditionEffect; //activation in chain
+        public Func<AIGameState, IList<AIGameState>> EffectCancel; //removal of effect (eg when an equip is destroyed so atk must be reduced again)
+        public IList<EffectTag> Tags;
+        public AICard Parent;
     }
 
     public class AICard
@@ -55,8 +57,19 @@ namespace AIBase.Game
         public SummonMethod SummonSource;
 
         public IList<CardEffect> Effects;
-        
-        public AICard(AICard copy)
+
+        public static AICard FromAICard(AICard card)
+        {
+            switch (card.TrueName)
+            {
+                case CardName.PotOfExtravagance:
+                    return new PotOfExtravagance(card);
+                default:
+                    return new AICard(card);
+            }
+        }
+
+        protected AICard(AICard copy)
         {
             source = copy.source;
             
@@ -86,16 +99,20 @@ namespace AIBase.Game
             Negated = copy.Negated;
             SummonSource = copy.SummonSource;
             Effects = copy.Effects;
-
-            
         }
 
-        public static AICard FromClientCard(ClientCard card, ClientField field)
+        public static AICard FromClientCard(ClientCard card)
         {
-            return new AICard(card, field);
+            switch ((CardName)card.Id)
+            {
+                case CardName.PotOfExtravagance:
+                    return new PotOfExtravagance(card);
+                default:
+                    return new AICard(card);
+            }
         }
 
-        public AICard(ClientCard card, ClientField field)
+        protected AICard(ClientCard card)
         {
             source = card;
             
@@ -103,7 +120,7 @@ namespace AIBase.Game
             EffectiveName = (CardName)card.Alias;
             Position = ((CardPosition)card.Position).ToBattlePos();
             FaceUp = ((CardPosition)card.Position == CardPosition.FaceUpAttack || (CardPosition)card.Position == CardPosition.FaceUpDefence);
-            Location = field.GetMonstersInExtraZone().Contains(card) ? CardLoc.ExtraMonsterZone : card.Location.ToCardLoc();
+            Location = card.Location.ToCardLoc();
             Level = card.Level;
             Rank = card.Rank;
             LScale = card.LScale;
@@ -137,6 +154,7 @@ namespace AIBase.Game
             SummonSource = card.IsSpecialSummoned ? SummonMethod.Special : SummonMethod.Normal;
 
             Effects = new List<CardEffect>();
+            createEffects();
 
         }
 
@@ -261,6 +279,16 @@ namespace AIBase.Game
         public virtual bool IsEffectMonster(AIGameState state)
         {
             return Type.isMonsterType() && Effects.Count > 0;
+        }
+
+        protected virtual void createEffects()
+        {
+
+        }
+
+        public IList<AIGameState> nil(AIGameState state)
+        {
+            return new List<AIGameState> { state };
         }
 
         public override string ToString()

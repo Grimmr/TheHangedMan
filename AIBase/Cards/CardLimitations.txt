@@ -1,0 +1,2 @@
+﻿Pot Of Extravagance:
+	We don't keep track of cards randomly removed from deck/extra so paying the cost of this card might cause other card effects to turnoff / change result in a way the AI doesn't expect

@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using WindBot.Game;
 using WindBot.Game.AI;
+using YGOSharp.OCGWrapper;
 using YGOSharp.OCGWrapper.Enums;
 using Action = AIBase.Game.Action;
 
@@ -25,6 +26,7 @@ namespace AIBase.AIExecutor
             AddExecutor(ExecutorType.Summon, SummonCheck);
             AddExecutor(ExecutorType.MonsterSet, SetCheck);
             AddExecutor(ExecutorType.Repos, ReposCheck);
+            AddExecutor(ExecutorType.Activate, ActivateCheck);
             AddExecutor(ExecutorType.GoToEndPhase, delegate () { return GotoPhaseCheck(DuelPhase.End); }) ;
             AddExecutor(ExecutorType.GoToBattlePhase, delegate () { return GotoPhaseCheck(DuelPhase.BattleStart); });
             AddExecutor(ExecutorType.GoToBattlePhase, delegate () { return GotoPhaseCheck(DuelPhase.BattleStart); });
@@ -82,6 +84,21 @@ namespace AIBase.AIExecutor
             return false;
         }
 
+        public bool ActivateCheck()
+        {
+            if (state == null) { return false; }
+            if (GetNextAction() is ActivateCard)
+            {
+                var action = ((ActivateCard)GetNextAction());
+                if (action.Card.source == Card && (ActivateDescription == 0 || ActivateDescription == Util.GetStringId((int)action.Card.TrueName, action.Effect)))
+                {
+                    StepPC();
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public bool GotoPhaseCheck(DuelPhase p)
         {
             if (state == null) { return false; }
@@ -116,6 +133,17 @@ namespace AIBase.AIExecutor
                 return (int)Math.Pow(2, ((SelectZone)next).Zone);
             }
             return base.OnSelectPlace(cardId, player, location, available);
+        }
+
+        public override int OnSelectOption(IList<long> options)
+        {
+            var next = GetNextAction();
+            if (next is SelectOption)
+            {
+                StepPC();
+                return ((SelectOption)next).Choice;
+            }
+            return base.OnSelectOption(options);
         }
 
         public override ClientCard OnSelectAttacker(IList<ClientCard> attackers, IList<ClientCard> defenders)
@@ -171,7 +199,7 @@ namespace AIBase.AIExecutor
 
         public virtual bool CompareGameStateLT(AIGameState lhs, AIGameState rhs)
         {
-            var lhsScore = 0;
+            /*var lhsScore = 0;
             var lhsCount = 0;
             var rhsScore = 0;
             var rhsCount = 0;
@@ -190,13 +218,12 @@ namespace AIBase.AIExecutor
                     rhsScore += card.Atk;
                     rhsCount++;
                 }
-            }
+            }*/
 
             //Console.WriteLine("lhs ({0} {1} {2} {3}) - rhs ({4} {5} {6} {7})", lhs.Duel.Fields[Player.Enemy].LP, lhsCount, lhsScore, lhs.Actions.Count(), rhs.Duel.Fields[Player.Enemy].LP, rhsCount, rhsScore, rhs.Actions.Count());
-            foreach (AICard card in rhs.Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone]) { if (card != null && card.Position == BattlePos.Def && card.FaceUp) { return true; } }
-            return false;
+            if (rhs.Duel.Fields[Player.Bot].DrawCount > 0) { return true;  }
 
-            if (rhs.Duel.Fields[Player.Enemy].LP < lhs.Duel.Fields[Player.Enemy].LP) { return true; }
+            /*if (rhs.Duel.Fields[Player.Enemy].LP < lhs.Duel.Fields[Player.Enemy].LP) { return true; }
             if (rhs.Duel.Fields[Player.Enemy].LP > lhs.Duel.Fields[Player.Enemy].LP) { return false; }
             if (rhs.Duel.Fields[Player.Bot].LP <= 0) { return false; }
             if (rhsCount > lhsCount) { return true; }
@@ -204,7 +231,7 @@ namespace AIBase.AIExecutor
             if (rhsScore < lhsScore) { return true; }
             if (rhsScore > lhsScore) { return false; }
 
-            if (rhs.Actions.Count() < lhs.Actions.Count()) { return true; }
+            if (rhs.Actions.Count() < lhs.Actions.Count()) { return true; }*/
 
             return false;
         }

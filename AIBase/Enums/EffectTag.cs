@@ -8,7 +8,7 @@ namespace AIBase.Enums
 {
     public enum EffectTag
     {
-
+        AddFromDeckToHand
     }
 
     public enum SuperEffectTag

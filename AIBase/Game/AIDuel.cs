@@ -10,7 +10,7 @@ using YGOSharp.OCGWrapper.Enums;
 
 namespace AIBase.Game
 {
-    using ChainLink = Tuple<AICard, CardEffect, AICard>;
+    using ChainLink = Tuple<AICard, CardEffect, int>; //int is the action that activated this chainlink effect, or the action before the first cost choice was made
     using Battle = Tuple<Player, AICard, AICard>;
     public class AIDuel
     {
@@ -42,7 +42,7 @@ namespace AIBase.Game
             CurrentChain = new List<ChainLink>();
             foreach(ChainLink link in copy.CurrentChain)
             {
-                CurrentChain.Add(new ChainLink(new AICard(link.Item1), link.Item2, new AICard(link.Item1)));
+                CurrentChain.Add(new ChainLink(AICard.FromAICard(link.Item1), link.Item2, link.Item3));
             }
         }
 

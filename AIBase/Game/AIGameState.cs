@@ -41,7 +41,7 @@ namespace AIBase.Game
             Duel = new AIDuel(duel);
             PC = HiddenInfo;
             HiddenInfo = -1;
-            for(int i = Actions.Count()-1; i >= PC; i--)
+            for (int i = Actions.Count() - 1; i >= PC; i--)
             {
                 Actions.RemoveAt(i);
             }
@@ -69,6 +69,12 @@ namespace AIBase.Game
                     {
                         protoOptions = protoOptions.Concat(GenerateNormalSetFromCard(card)).ToList();
                     }
+
+                    //effect activation speed 1+
+                    if (Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2 && Duel.CurrentChain.Count() == 0)
+                    {
+                        protoOptions = protoOptions.Concat(GenerateEffectActivationsFromCard(card)).ToList();
+                    }
                 }
 
                 //consider attacks
@@ -78,7 +84,7 @@ namespace AIBase.Game
                 }
 
                 //consider monsters on field
-                foreach(AICard card in Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone])
+                foreach (AICard card in Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone])
                 {
                     if (card != null)
                     {
@@ -109,12 +115,18 @@ namespace AIBase.Game
                         outcome.Duel.Phase = p;
                         protoOptions.Add(outcome);
                     }
-                } 
+                }
+            }
+
+            //do nothing and resolve chain
+            if(Duel.CurrentChain.Count() > 0)
+            {
+                protoOptions = protoOptions.Concat(ComputeChainResolution()).ToList();
             }
 
             //if there are any follow states return them not these
             IList<AIGameState> options = new List<AIGameState>();
-            foreach(AIGameState state in protoOptions)
+            foreach (AIGameState state in protoOptions)
             {
                 IList<AIGameState> follow = state.GenerateOptions();
                 if (follow.Count != 0)
@@ -136,7 +148,7 @@ namespace AIBase.Game
             {
                 case DuelPhase.Draw: return new List<DuelPhase> { DuelPhase.Standby };
                 case DuelPhase.Standby: return new List<DuelPhase> { DuelPhase.Main1 };
-                case DuelPhase.Main1: return Duel.TurnCount > 1? new List<DuelPhase> { DuelPhase.BattleStart, DuelPhase.End } : new List<DuelPhase> { DuelPhase.End };
+                case DuelPhase.Main1: return Duel.TurnCount > 1 ? new List<DuelPhase> { DuelPhase.BattleStart, DuelPhase.End } : new List<DuelPhase> { DuelPhase.End };
                 case DuelPhase.BattleStart: return new List<DuelPhase> { DuelPhase.BattleStep };
                 case DuelPhase.BattleStep: return new List<DuelPhase> { DuelPhase.Main2, DuelPhase.End };
                 case DuelPhase.Main2: return new List<DuelPhase> { DuelPhase.End };
@@ -147,8 +159,8 @@ namespace AIBase.Game
         public IList<AIGameState> GenerateNormalSummonsFromCard(AICard card)
         {
             IList<AIGameState> options = new List<AIGameState>();
-             
-            if(card.NormalSummonCondition(this) && Duel.Fields[Player.Bot].FreeMonsterZones() > 0)
+
+            if (card.NormalSummonCondition(this) && Duel.Fields[Player.Bot].FreeMonsterZones() > 0)
             {
                 for (int zone = 0; zone < 5; zone++)
                 {
@@ -174,6 +186,22 @@ namespace AIBase.Game
                     {
                         options = options.Concat(ComputeNormalSet(card, zone)).ToList();
                     }
+                }
+            }
+
+            return options;
+        }
+
+        public IList<AIGameState> GenerateEffectActivationsFromCard(AICard card)
+        {
+            IList<AIGameState> options = new List<AIGameState>();
+
+            for (int i = 0; i < card.Effects.Count(); i++)
+            {
+                var effect = card.Effects[i];
+                if (effect.Triggers.Contains(EffectTrigger.Activation) && effect.Precondition(this))
+                {
+                    options = options.Concat(ComputeEffectActivation(effect)).ToList();
                 }
             }
 
@@ -208,7 +236,7 @@ namespace AIBase.Game
         {
             IList<AIGameState> options = new List<AIGameState>();
 
-            foreach(AICard attacker in Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone])
+            foreach (AICard attacker in Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone])
             {
                 if (attacker != null && attacker.AttackCondition(this))
                 {
@@ -219,9 +247,9 @@ namespace AIBase.Game
                     }
                     else
                     {
-                        foreach(AICard defender in Duel.Fields[Player.Enemy].Locations[CardLoc.MonsterZone])
+                        foreach (AICard defender in Duel.Fields[Player.Enemy].Locations[CardLoc.MonsterZone])
                         {
-                            if(defender != null && defender.AttackTargetCondition(this))
+                            if (defender != null && defender.AttackTargetCondition(this))
                             {
                                 options = options.Concat(ComputeAttack(attacker, defender)).ToList();
                             }
@@ -257,6 +285,15 @@ namespace AIBase.Game
             initial.getCard(target).Position = BattlePos.Def;
 
             return new List<AIGameState> { initial };
+        }
+
+        public IList<AIGameState> ComputeEffectActivation(CardEffect effect)
+        {
+            var initial = new AIGameState(this);
+            initial.Actions.Add(new ActivateCard(effect.Parent, effect.Parent.Effects.IndexOf(effect)));
+            initial.Duel.CurrentChain.Add(new Tuple<AICard, CardEffect, int>(effect.Parent, effect, initial.Actions.Count()));
+            var states = effect.PostConditionCost(initial);
+            return states;
         }
 
         public IList<AIGameState> ComputeFlipSummon(AICard target)
@@ -357,6 +394,32 @@ namespace AIBase.Game
             var initial = new AIGameState(this);
             initial.Duel.Fields[target].LP -= v;
             return new List<AIGameState> { initial };
+        }
+
+        public IList<AIGameState> ComputeDraw(Player target, int c)
+        {
+            var initial = new AIGameState(this);
+            initial.Duel.Fields[target].DrawCount += c;
+            return new List<AIGameState> { initial };
+        }
+
+        public IList<AIGameState> ComputeChainResolution()
+        {
+            var chainResults = new List<AIGameState>();
+
+            if (Duel.CurrentChain.Count > 0)
+            {
+                var initial = new AIGameState(this);
+                var link = initial.Duel.CurrentChain.Last();
+                var thisEffectResults = link.Item2.PostConditionEffect(initial);
+                foreach(AIGameState state in thisEffectResults)
+                {
+                    state.Duel.CurrentChain.RemoveAt(state.Duel.CurrentChain.Count()-1);
+                    chainResults = state.Duel.CurrentChain.Count() > 0? chainResults.Concat(state.ComputeChainResolution()).ToList() : new List<AIGameState> { state }; //only recurse if there is going to be stuff on the chain
+                }
+            }
+
+            return chainResults;
         }
 
         public Action GetNextAction()

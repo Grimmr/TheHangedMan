@@ -94,7 +94,7 @@ namespace AIBase.Enums
                 return CardBasicType.Token;
             }
 
-            if(t == (CardType.Spell | CardType.Normal))
+            if(t == CardType.Spell )
             {
                 return CardBasicType.NormalSpell;
             }
@@ -119,7 +119,7 @@ namespace AIBase.Enums
                 return CardBasicType.RitualSpell;
             }
 
-            if(t == (CardType.Trap | CardType.Normal))
+            if(t == CardType.Trap )
             {
                 return CardBasicType.NormalTrap;
             }
