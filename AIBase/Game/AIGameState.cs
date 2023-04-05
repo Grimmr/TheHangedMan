@@ -86,7 +86,12 @@ namespace AIBase.Game
                         if ((Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2) && Duel.CurrentChain.Count() == 0)
                         {
                             protoOptions = protoOptions.Concat(GenerateFlipSummonFromCard(card)).ToList();
-                        } 
+                        }
+                        //change position
+                        if ((Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2) && Duel.CurrentChain.Count() == 0)
+                        {
+                            protoOptions = protoOptions.Concat(GenerateChangePosFromCard(card)).ToList();
+                        }
                     }
                 }
 
@@ -187,6 +192,18 @@ namespace AIBase.Game
             return options;
         }
 
+        public IList<AIGameState> GenerateChangePosFromCard(AICard card)
+        {
+            IList<AIGameState> options = new List<AIGameState>();
+
+            if (card.ChangePosCondition(this))
+            {
+                options = options.Concat(ComputeChangePos(card)).ToList();
+            }
+
+            return options;
+        }
+
         public IList<AIGameState> GenerateAttacks()
         {
             IList<AIGameState> options = new List<AIGameState>();
@@ -248,6 +265,15 @@ namespace AIBase.Game
             initial.Actions.Add(new FlipSummon(target));
             initial.getCard(target).FaceUp = true;
             initial.getCard(target).Position = BattlePos.Atk;
+
+            return new List<AIGameState> { initial };
+        }
+
+        public IList<AIGameState> ComputeChangePos(AICard target)
+        {
+            var initial = new AIGameState(this);
+            initial.Actions.Add(new ChangePos(target));
+            initial.getCard(target).Position = initial.getCard(target).Position.Change();
 
             return new List<AIGameState> { initial };
         }

@@ -57,6 +57,7 @@
     <Compile Include="Enums\Player.cs" />
     <Compile Include="Enums\SummonMethod.cs" />
     <Compile Include="Game\Action.cs" />
+    <Compile Include="Game\Actions\ChangePos.cs" />
     <Compile Include="Game\Actions\DeclareAttack.cs" />
     <Compile Include="Game\Actions\FlipSummon.cs" />
     <Compile Include="Game\Actions\GoToPhase.cs" />
@@ -68,7 +69,6 @@
     <Compile Include="Game\AIDuel.cs" />
     <Compile Include="Game\AIGameState.cs" />
     <Compile Include="Game\AIPlayerField.cs" />
-    <Compile Include="Game\Buffs\Buff.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Cards\" />

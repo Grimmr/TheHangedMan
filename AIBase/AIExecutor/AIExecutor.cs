@@ -71,6 +71,14 @@ namespace AIBase.AIExecutor
                     return true;
                 }
             }
+            else if (GetNextAction() is ChangePos)
+            {
+                if (((ChangePos)GetNextAction()).Monster.source == Card)
+                {
+                    StepPC();
+                    return true;
+                }
+            }
             return false;
         }
 
@@ -185,6 +193,9 @@ namespace AIBase.AIExecutor
             }
 
             //Console.WriteLine("lhs ({0} {1} {2} {3}) - rhs ({4} {5} {6} {7})", lhs.Duel.Fields[Player.Enemy].LP, lhsCount, lhsScore, lhs.Actions.Count(), rhs.Duel.Fields[Player.Enemy].LP, rhsCount, rhsScore, rhs.Actions.Count());
+            foreach (AICard card in rhs.Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone]) { if (card != null && card.Position == BattlePos.Def && card.FaceUp) { return true; } }
+            return false;
+
             if (rhs.Duel.Fields[Player.Enemy].LP < lhs.Duel.Fields[Player.Enemy].LP) { return true; }
             if (rhs.Duel.Fields[Player.Enemy].LP > lhs.Duel.Fields[Player.Enemy].LP) { return false; }
             if (rhs.Duel.Fields[Player.Bot].LP <= 0) { return false; }
@@ -192,8 +203,6 @@ namespace AIBase.AIExecutor
             if (rhsCount < lhsCount) { return false; }
             if (rhsScore < lhsScore) { return true; }
             if (rhsScore > lhsScore) { return false; }
-
-            foreach (AICard card in rhs.Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone]) { return true; }
 
             if (rhs.Actions.Count() < lhs.Actions.Count()) { return true; }
 

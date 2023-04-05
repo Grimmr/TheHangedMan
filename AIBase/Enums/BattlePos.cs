@@ -27,5 +27,17 @@ namespace AIBase.Enums
                 return BattlePos.Atk;
             }
         }
+
+        public static BattlePos Change(this BattlePos pos)
+        {
+            if(pos == BattlePos.Atk)
+            {
+                return BattlePos.Def;
+            }
+            else
+            {
+                return BattlePos.Atk;
+            }
+        }
     }
 }

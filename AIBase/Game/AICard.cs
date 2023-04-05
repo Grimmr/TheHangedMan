@@ -1,6 +1,5 @@
 ﻿using AIBase.Enums;
 using AIBase.Game.Actions;
-using AIBase.Game.Buffs;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,12 +21,6 @@ namespace AIBase.Game
         public Func<AIGameState[], AIGameState> PostConditionEffect; //activation in chain
         public IList<EffectTag> tags;
         public AICard parent;
-    }
-
-    public class Influence
-    {
-        public Func<bool, AIGameState, AICard> CleanUpCondition;
-        public IList<Buff> Buffs;
     }
 
     public class AICard
@@ -62,7 +55,6 @@ namespace AIBase.Game
         public SummonMethod SummonSource;
 
         public IList<CardEffect> Effects;
-        public IList<Influence> Buffs;
         
         public AICard(AICard copy)
         {
@@ -182,6 +174,34 @@ namespace AIBase.Game
         public virtual bool TributeSummonCondition(AIGameState state)
         {
             return Type == CardBasicType.Monster && Level >= 5;
+        }
+
+        public virtual bool ChangePosCondition(AIGameState state)
+        {
+            if (!Type.isMonsterType() || !FaceUp)
+            {
+                return false;
+            }
+
+            for (int i = state.Actions.Count() - 1; i >= 0; i--)
+            {
+                if (state.Actions[i] is ChangePos)
+                {
+                    if (((ChangePos)state.Actions[i]).Monster.source == this.source)
+                    {
+                        return false;
+                    }
+                }
+
+                if (state.Actions[i] is NormalSummon)
+                {
+                    if (((NormalSummon)state.Actions[i]).Monster.source == this.source)
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         public virtual IList<List<AICard>> GetTributeOptions(AIGameState state)
