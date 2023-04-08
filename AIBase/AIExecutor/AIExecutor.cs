@@ -87,9 +87,18 @@ namespace AIBase.AIExecutor
         public bool ActivateCheck()
         {
             if (state == null) { return false; }
-            if (GetNextAction() is ActivateCard)
+            if (GetNextAction() is ActivateCard && Duel.CurrentChain.Count == 0)
             {
                 var action = ((ActivateCard)GetNextAction());
+                if (action.Card.source == Card && (ActivateDescription == 0 || ActivateDescription == Util.GetStringId((int)action.Card.TrueName, action.Effect)))
+                {
+                    StepPC();
+                    return true;
+                }
+            }
+            if (GetNextAction() is ChainCard && Duel.CurrentChain.Count > 0)
+            {
+                var action = ((ChainCard)GetNextAction());
                 if (action.Card.source == Card && (ActivateDescription == 0 || ActivateDescription == Util.GetStringId((int)action.Card.TrueName, action.Effect)))
                 {
                     StepPC();
@@ -199,7 +208,7 @@ namespace AIBase.AIExecutor
 
         public virtual bool CompareGameStateLT(AIGameState lhs, AIGameState rhs)
         {
-            /*var lhsScore = 0;
+            var lhsScore = 0;
             var lhsCount = 0;
             var rhsScore = 0;
             var rhsCount = 0;
@@ -218,13 +227,32 @@ namespace AIBase.AIExecutor
                     rhsScore += card.Atk;
                     rhsCount++;
                 }
-            }*/
+            }
 
             //Console.WriteLine("lhs ({0} {1} {2} {3}) - rhs ({4} {5} {6} {7})", lhs.Duel.Fields[Player.Enemy].LP, lhsCount, lhsScore, lhs.Actions.Count(), rhs.Duel.Fields[Player.Enemy].LP, rhsCount, rhsScore, rhs.Actions.Count());
-            if (rhs.Duel.Fields[Player.Bot].DrawCount > 0) { return true;  }
+            if (rhsCount > lhsCount) { return true; }
+            if (rhsCount < lhsCount) { return false; }
 
-            /*if (rhs.Duel.Fields[Player.Enemy].LP < lhs.Duel.Fields[Player.Enemy].LP) { return true; }
+            if (rhs.Duel.Fields[Player.Bot].DrawCount > lhs.Duel.Fields[Player.Bot].DrawCount) { return true;  }
+            if (rhs.Duel.Fields[Player.Bot].DrawCount < lhs.Duel.Fields[Player.Bot].DrawCount) { return false; }
+
+            if (rhs.Duel.Fields[Player.Enemy].LP < lhs.Duel.Fields[Player.Enemy].LP) { return true; }
             if (rhs.Duel.Fields[Player.Enemy].LP > lhs.Duel.Fields[Player.Enemy].LP) { return false; }
+
+            
+            foreach(var a in rhs.Actions)
+            {
+                if(a is ChainCard)
+                {
+                    return true;
+                }
+            }
+
+            if (rhs.Actions.Count < lhs.Actions.Count) { return true; }
+            if (rhs.Actions.Count > lhs.Actions.Count) { return false; }
+
+
+            /*
             if (rhs.Duel.Fields[Player.Bot].LP <= 0) { return false; }
             if (rhsCount > lhsCount) { return true; }
             if (rhsCount < lhsCount) { return false; }

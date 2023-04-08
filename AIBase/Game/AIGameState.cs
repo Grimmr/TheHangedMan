@@ -70,10 +70,19 @@ namespace AIBase.Game
                         protoOptions = protoOptions.Concat(GenerateNormalSetFromCard(card)).ToList();
                     }
 
-                    //effect activation speed 1+
+                    //effect activation speed 1
                     if (Duel.Phase == DuelPhase.Main1 || Duel.Phase == DuelPhase.Main2 && Duel.CurrentChain.Count() == 0)
                     {
                         protoOptions = protoOptions.Concat(GenerateEffectActivationsFromCard(card)).ToList();
+                    }
+                    //effect activation speed 2
+                    if ((Duel.Phase == DuelPhase.BattleStart || Duel.Phase == DuelPhase.BattleStep) && Duel.CurrentChain.Count() == 0)
+                    {
+                        protoOptions = protoOptions.Concat(GenerateQuickEffectActivationsFromCard(card, false)).ToList();
+                    }
+                    else if (Duel.CurrentChain.Count() > 0 && Duel.CurrentChain.Last().Item1.Type != CardBasicType.CounterTrap)
+                    {
+                        protoOptions = protoOptions.Concat(GenerateQuickEffectActivationsFromCard(card, true)).ToList();
                     }
                 }
 
@@ -208,6 +217,29 @@ namespace AIBase.Game
             return options;
         }
 
+        public IList<AIGameState> GenerateQuickEffectActivationsFromCard(AICard card, bool chain)
+        {
+            IList<AIGameState> options = new List<AIGameState>();
+
+            for (int i = 0; i < card.Effects.Count(); i++)
+            {
+                var effect = card.Effects[i];
+                if (effect.Triggers.Contains(EffectTrigger.Activation) && (effect.Tags.Contains(EffectTag.QuickEffect) || card.Type == CardBasicType.QuickPlaySpell || card.Type.isTrapType()) && effect.Precondition(this))
+                {
+                    if (chain)
+                    {
+                        options = options.Concat(ComputeEffectChainActivation(effect)).ToList();
+                    }
+                    else
+                    {
+                        options = options.Concat(ComputeEffectActivation(effect)).ToList();
+                    }
+                }
+            }
+
+            return options;
+        }
+
         public IList<AIGameState> GenerateFlipSummonFromCard(AICard card)
         {
             IList<AIGameState> options = new List<AIGameState>();
@@ -296,6 +328,15 @@ namespace AIBase.Game
             return states;
         }
 
+        public IList<AIGameState> ComputeEffectChainActivation(CardEffect effect)
+        {
+            var initial = new AIGameState(this);
+            initial.Actions.Add(new ChainCard(effect.Parent, effect.Parent.Effects.IndexOf(effect)));
+            initial.Duel.CurrentChain.Add(new Tuple<AICard, CardEffect, int>(effect.Parent, effect, initial.Actions.Count()));
+            var states = effect.PostConditionCost(initial);
+            return states;
+        }
+
         public IList<AIGameState> ComputeFlipSummon(AICard target)
         {
             var initial = new AIGameState(this);
@@ -334,7 +375,7 @@ namespace AIBase.Game
                 if(!defender.FaceUp)
                 {
                     defender.FaceUp = true;
-                    initial.setHiddeInfo(initial.Actions.Count());
+                    initial.setHiddenInfo(initial.Actions.Count());
                     return initial.ComputeDestruction(defender);
                 }
 
@@ -396,6 +437,13 @@ namespace AIBase.Game
             return new List<AIGameState> { initial };
         }
 
+        public IList<AIGameState> ComputeAttackUp(AICard target, int v)
+        {
+            var initial = new AIGameState(this);
+            getCard(target).Atk += v;
+            return new List<AIGameState> { initial };
+        }
+
         public IList<AIGameState> ComputeDraw(Player target, int c)
         {
             var initial = new AIGameState(this);
@@ -424,6 +472,10 @@ namespace AIBase.Game
 
         public Action GetNextAction()
         {   
+            if(PC >= Actions.Count())
+            {
+                return new NoAction();
+            }
             return Actions[PC];
         }
 
@@ -442,7 +494,7 @@ namespace AIBase.Game
             return null;
         }
 
-        public void setHiddeInfo(int v)
+        public void setHiddenInfo(int v)
         {
             if (v < HiddenInfo || HiddenInfo == -1) { HiddenInfo = v; }
         }

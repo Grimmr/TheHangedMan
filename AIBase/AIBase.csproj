@@ -15,7 +15,7 @@
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AIExecutor\AIExecutor.cs" />
+    <Compile Include="Cards\RushRecklessly.cs" />
     <Compile Include="Cards\PotOfExtravagance.cs" />
     <Compile Include="Enums\BattlePos.cs" />
     <Compile Include="Enums\CardLoc.cs" />
@@ -59,14 +60,17 @@
     <Compile Include="Enums\SummonMethod.cs" />
     <Compile Include="Game\Action.cs" />
     <Compile Include="Game\Actions\ActivateCard.cs" />
+    <Compile Include="Game\Actions\ChainCard.cs" />
     <Compile Include="Game\Actions\ChangePos.cs" />
     <Compile Include="Game\Actions\DeclareAttack.cs" />
     <Compile Include="Game\Actions\FlipSummon.cs" />
     <Compile Include="Game\Actions\GoToPhase.cs" />
+    <Compile Include="Game\Actions\NoAction.cs" />
     <Compile Include="Game\Actions\NormalSet.cs" />
     <Compile Include="Game\Actions\NormalSummon.cs" />
     <Compile Include="Game\Actions\SelectAttackTarget.cs" />
     <Compile Include="Game\Actions\SelectOption.cs" />
+    <Compile Include="Game\Actions\SelectTarget.cs" />
     <Compile Include="Game\Actions\SelectZone.cs" />
     <Compile Include="Game\AICard.cs" />
     <Compile Include="Game\AIDuel.cs" />

@@ -64,6 +64,8 @@ namespace AIBase.Game
             {
                 case CardName.PotOfExtravagance:
                     return new PotOfExtravagance(card);
+                case CardName.RushRecklessly:
+                    return new RushRecklessly(card);
                 default:
                     return new AICard(card);
             }
@@ -107,6 +109,8 @@ namespace AIBase.Game
             {
                 case CardName.PotOfExtravagance:
                     return new PotOfExtravagance(card);
+                case CardName.RushRecklessly:
+                    return new RushRecklessly(card);
                 default:
                     return new AICard(card);
             }
@@ -295,5 +299,28 @@ namespace AIBase.Game
         {
             return TrueName.ToString();
         }
+
+        /// <summary>
+        /// helper that generates all the zones a spell card could be activated in
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns></returns>
+        protected IList<AIGameState> HelperSpellZoneSellect(AIGameState state)
+        {
+            var options = new List<AIGameState>();
+            for (int i = 0; i < 5; i++)
+            {
+                if (state.Duel.Fields[Owner].Locations[CardLoc.SpellZone][i] == null)
+                {
+                    var option = new AIGameState(state);
+                    option.Actions.Add(new SelectZone(i));
+                    option.Duel.Fields[Player.Bot].MoveCard(option.getCard(this), CardLoc.Hand, CardLoc.SpellZone, i);
+                    options.Add(option);
+                }
+            }
+
+            return options;
+        }
+
     }
 }

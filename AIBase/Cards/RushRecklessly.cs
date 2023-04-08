@@ -11,10 +11,10 @@ using YGOSharp.OCGWrapper.Enums;
 
 namespace AIBase.Cards
 {
-    internal class PotOfExtravagance : AICard
+    internal class RushRecklessly : AICard
     {
-        public PotOfExtravagance(AICard copy) : base(copy) { }
-        public PotOfExtravagance(ClientCard card) : base(card) { }
+        public RushRecklessly(AICard copy) : base(copy) { }
+        public RushRecklessly(ClientCard card) : base(card) { }
 
         protected override void createEffects()
         {
@@ -30,18 +30,20 @@ namespace AIBase.Cards
         }
 
         public bool precondition(AIGameState state)
-        {   
-            //we must be at the start of our main phase
-            if( state.Actions.Count() > 0 && (!(state.Actions.Last() is  GoToPhase) || ((GoToPhase)state.Actions.Last()).Phase != DuelPhase.Main1))
+        {
+            //There must be one face up monster on the field
+            var validTarget = false;
+            foreach(var field in state.Duel.Fields)
             {
-                return false;
+                foreach(var card in field.Value.Locations[CardLoc.MonsterZone])
+                {
+                    if(card != null && card.FaceUp)
+                    {
+                        validTarget = true;
+                    }
+                }
             }
-            
-            //we must have at least 3 cards in the extra
-            if (state.Duel.Fields[Owner].Locations[CardLoc.ExtraDeck].Count() < 3)
-            { 
-                return false; 
-            }
+            if(!validTarget) { return false; }
 
             //we must have an open spell trap slot
             for (int i = 0; i < 5; i++)
@@ -58,23 +60,17 @@ namespace AIBase.Cards
         public IList<AIGameState> postConditionCost(AIGameState state)
         {
             var options = new List<AIGameState>();
-            var ExtraCount = state.Duel.Fields[Owner].Locations[CardLoc.ExtraDeck].Count();
 
             foreach (var initial in HelperSpellZoneSellect(state))
             {
+                foreach (var target in state.Duel.Fields[Player.Bot].Locations[CardLoc.MonsterZone].Concat(state.Duel.Fields[Player.Enemy].Locations[CardLoc.MonsterZone]).ToList())
                 {
-                    var option = new AIGameState(initial);
-                    option.Actions.Add(new SelectOption(0));
-                    option.setHiddenInfo(option.Actions.Count());
-                    options.Add(option);
-                }
-
-                if (ExtraCount >= 6)
-                {
-                    var option = new AIGameState(initial);
-                    option.Actions.Add(new SelectOption(1));
-                    option.setHiddenInfo(option.Actions.Count());
-                    options.Add(option);
+                    if (target != null)
+                    {
+                        var option = new AIGameState(initial);
+                        option.Actions.Add(new SelectTarget(target));
+                        options.Add(option); 
+                    }
                 }
             }
 
@@ -87,9 +83,9 @@ namespace AIBase.Cards
 
             //assume we are the top of the chain
             //cards drawn = option index + 1 (0: 3 discard, 1: 6 discard)
-            var choice = (SelectOption)state.Actions[state.Duel.CurrentChain.Last().Item3+1];
+            var choice = (SelectTarget)state.Actions[state.Duel.CurrentChain.Last().Item3 + 1];
             var option = new AIGameState(state);
-            return option.ComputeDraw(Owner, choice.Choice + 1);
+            return option.ComputeAttackUp(option.getCard(choice.target), 700);
         }
     }
 }
